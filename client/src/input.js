@@ -6,7 +6,7 @@
 
 const JOY_RADIUS = 60;
 const SPRINT_PUSH = 1.35;
-const FIRE_FOLLOW = 46; // how far the fire button can travel with your thumb (px)
+const FIRE_FOLLOW = 110; // the fire button follows your thumb up to this far (px)
 
 export class Input {
   constructor(root, settings) {
@@ -182,10 +182,13 @@ export class Input {
     // Sensitivity adapts to screen size: one screen-width drag turns about 160 degrees
     const radPerPx = (Math.PI * 0.9) / Math.max(320, window.innerWidth) * this.settings.sensitivity;
     const mouseScale = document.pointerLockElement ? 0.35 : 1;
+    // Touch look acceleration: slow drags stay precise, quick flicks turn further
+    const mag = Math.hypot(this.lookDX, this.lookDY);
+    const accel = document.pointerLockElement ? 1 : 1 + Math.min(1.2, Math.max(0, mag - 6) / 30);
     const out = {
       mx, my, sprint,
-      lookX: this.lookDX * radPerPx * mouseScale,
-      lookY: this.lookDY * radPerPx * mouseScale,
+      lookX: this.lookDX * radPerPx * mouseScale * accel,
+      lookY: this.lookDY * radPerPx * mouseScale * accel,
       fire: this.held.fire,
       ads: this.held.ads || this.adsToggled,
       ...this.edges,

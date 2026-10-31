@@ -47,8 +47,8 @@ export const CAMERA = {
   tpsDistance: 3.0,
   tpsShoulder: 0.85,
   tpsAdsDistance: 1.6,
-  blendTime: 0.2,
-  adaptiveReturn: 0.6, // seconds after shooting before adaptive returns to TPS
+  blendTime: 0.08,      // FPS <-> TPS slide time
+  adaptiveReturn: 0.12, // seconds after the last shot before adaptive snaps back to TPS
 };
 
 // Picks Low / Medium / High from what the phone reports.

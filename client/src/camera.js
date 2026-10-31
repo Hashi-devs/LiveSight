@@ -82,11 +82,11 @@ export class CameraRig {
     cam.lookAt(_look.copy(cam.position).add(dir));
 
     const fov = ads ? adsFov : CAMERA.fov;
-    this.fov += (fov - this.fov) * Math.min(1, dt * 12);
+    this.fov += (fov - this.fov) * Math.min(1, dt * 26);
     if (Math.abs(cam.fov - this.fov) > 0.01) { cam.fov = this.fov; cam.updateProjectionMatrix(); }
 
     // Viewmodel: hip position <-> sight lined up with the screen centre
-    this.ads += ((ads ? 1 : 0) - this.ads) * Math.min(1, dt * 14);
+    this.ads += ((ads ? 1 : 0) - this.ads) * Math.min(1, dt * 28);
     this.recoilKick = Math.max(0, this.recoilKick - dt * 6);
     const a = this.ads, kick = this.recoilKick;
     const vmOn = this.blend < 0.05 && player.alive;

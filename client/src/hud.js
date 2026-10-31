@@ -17,7 +17,7 @@ export class Hud {
       cross: $('crosshair'), scope: $('scope'), reddot: $('reddot'),
       prog: $('progress'), progFill: $('progress-fill'), progLabel: $('progress-label'),
       fps: $('fps'), cam: $('cam-label'), heal: $('heal-count'), nums: $('dmgnums'),
-      ads: $('btn-ads'), crouch: $('btn-crouch'), prone: $('btn-prone'),
+      ads: $('btn-ads'), crouch: $('btn-crouch'), prone: $('btn-prone'), banner: $('killbanner'),
     };
     this.cache = {};
     this.hitT = 0; this.dmgT = 0; this.toastT = 0;
@@ -143,6 +143,20 @@ export class Hud {
       this.el.scope.style.opacity = sightType === 'scope2x' && s > 0.85 ? '1' : '0';
       this.el.reddot.style.opacity = sightType === 'reddot' && s > 0.7 ? '1' : '0';
     }
+  }
+
+  crosshairOn(on) { this.cls('xh', this.el.cross, 'enemy', on); this.cls('rd', this.el.reddot, 'enemy', on); }
+
+  // Big kill announcement in the upper middle of the screen
+  banner(title, sub, tier = 1) {
+    const b = this.el.banner;
+    b.className = 'tier' + tier;
+    b.querySelector('b').textContent = title;
+    b.querySelector('span').textContent = sub;
+    void b.offsetWidth; // restart the animation
+    b.classList.add('show');
+    clearTimeout(this.bannerT);
+    this.bannerT = setTimeout(() => b.classList.remove('show'), 1900);
   }
 
   hitmarker(kind) {

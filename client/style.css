@@ -93,6 +93,20 @@ svg .fill { fill: currentColor; stroke: none; }
 #crosshair i:nth-child(3) { width: 7px; height: 2px; top: -1px; left: calc(-7px - var(--gap)); }
 #crosshair i:nth-child(4) { width: 7px; height: 2px; top: -1px; left: var(--gap); }
 #crosshair b { position: absolute; width: 2px; height: 2px; left: -1px; top: -1px; background: #fff; }
+#crosshair.enemy i, #crosshair.enemy b { background: #ff3b30; box-shadow: 0 0 3px rgba(255, 40, 30, 0.9); }
+#reddot.enemy { background: #ff5a2a; }
+#killbanner { position: absolute; top: 22%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center;
+  opacity: 0; pointer-events: none; text-align: center; }
+#killbanner svg { width: 34px; height: 34px; color: #fff; filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.6)); }
+#killbanner b { font-family: var(--f-head); font-weight: 800; font-size: 30px; letter-spacing: 0.12em; font-style: italic; line-height: 1.1;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7); }
+#killbanner span { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; color: var(--dim); margin-top: 2px;
+  background: linear-gradient(90deg, transparent, var(--glass-2), transparent); padding: 2px 34px; }
+#killbanner.tier2 b { color: var(--gold); font-size: 34px; } #killbanner.tier2 svg { color: var(--gold); }
+#killbanner.tier3 b { color: #ff5a3c; font-size: 38px; } #killbanner.tier3 svg { color: #ff5a3c; }
+#killbanner.show { animation: kb 1.9s ease-out forwards; }
+@keyframes kb { 0% { opacity: 0; transform: translate(-50%, -50%) scale(1.6); } 10% { opacity: 1; transform: translate(-50%, -50%) scale(0.96); }
+  16% { transform: translate(-50%, -50%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1); } }
 #hitmark { position: absolute; left: 50%; top: 50%; width: 0; height: 0; opacity: 0; --c: #fff; }
 #hitmark i { position: absolute; width: 9px; height: 2px; background: var(--c); box-shadow: 0 0 2px #000; }
 #hitmark i:nth-child(1) { transform: translate(-14px, -12px) rotate(45deg); } #hitmark i:nth-child(2) { transform: translate(5px, -12px) rotate(-45deg); }

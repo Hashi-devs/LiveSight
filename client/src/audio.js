@@ -43,5 +43,9 @@ export class Audio {
   hit(head) { this.tone(head ? 1500 : 1100, 0.05, 'square', 0.08); }
   kill() { this.tone(880, 0.08, 'triangle', 0.2); setTimeout(() => this.tone(1320, 0.12, 'triangle', 0.2), 70); }
   hurt() { this.tone(160, 0.12, 'sawtooth', 0.12); }
+  announce(tier) {
+    const notes = tier >= 3 ? [660, 880, 1320] : tier === 2 ? [740, 1110] : [880];
+    notes.forEach((f, i) => setTimeout(() => this.tone(f, 0.14, 'triangle', 0.22), i * 90));
+  }
   reload() { this.tone(420, 0.04, 'square', 0.06); setTimeout(() => this.tone(620, 0.04, 'square', 0.06), 120); }
 }

@@ -132,6 +132,10 @@ function startMatch(mode) {
   game.timeLeft = MATCH.timeLimit;
   game.medkits = 2; game.cells = 2; game.heal = null;
   player.kills = player.deaths = player.damage = 0;
+  game.firstBlood = false;
+  game.chars.forEach((c) => { c.streak = 0; });
+  killState.multi = 0; killState.lastT = -99;
+  recoil.pending = recoil.yaw = recoil.applied = 0;
   if (mode === 'tdm') {
     BLUE_NAMES.forEach((n) => addBot(n, 'blue', { skill: 0.45 }));
     RED_NAMES.forEach((n) => addBot(n, 'red', { skill: 0.4 }));
@@ -195,18 +199,46 @@ function onHit(shooter, res) {
   if (res.killed) onKill(shooter, t, res.head);
 }
 
+const MULTI = ['', '', 'DOUBLE KILL', 'TRIPLE KILL', 'QUAD KILL', 'PENTA KILL'];
+const SPREE = { 3: 'KILLING SPREE', 5: 'RAMPAGE', 7: 'UNSTOPPABLE', 10: 'LEGENDARY' };
+const killState = { multi: 0, lastT: -99 };
+const ordinal = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? 'TH' : ['TH', 'ST', 'ND', 'RD'][n % 10] || 'TH');
+
 function onKill(killer, victim, head) {
   killer.kills++; victim.deaths++;
   victim.respawnT = game.mode === 'range' ? 1.5 : MATCH.respawn;
+  const ended = victim.streak || 0;
+  killer.streak = (killer.streak || 0) + 1;
+  victim.streak = 0;
+  const first = !game.firstBlood && game.mode === 'tdm';
+  game.firstBlood = true;
   if (game.mode === 'tdm') {
     game.score[killer.team]++;
     if (game.score[killer.team] >= MATCH.killTarget) setTimeout(endMatch, 1200);
   }
   const cls = (c) => (c.isPlayer ? 'me' : c.team === 'blue' ? 'b' : 'r');
-  hud.feed(`<span class="${cls(killer)}">${killer.name.toUpperCase()}</span><i>${head ? '◆' : '✕'}</i><span class="${cls(victim)}">${victim.name.toUpperCase()}</span>`);
+  hud.feed(`<span class="${cls(killer)}">${killer.name.toUpperCase()}</span><i>${head ? '◆' : '✕'}</i><span class="${cls(victim)}">${victim.name.toUpperCase()}</span>${first ? '<i>FIRST BLOOD</i>' : ''}`);
+
+  if (killer === player) {
+    const now = performance.now() / 1000;
+    killState.multi = now - killState.lastT < 5 ? killState.multi + 1 : 1;
+    killState.lastT = now;
+    // Biggest event wins: multi-kill > first blood > shutdown > spree > plain elimination
+    let title = 'ELIMINATED', tier = 1;
+    if (killState.multi >= 2) { title = MULTI[Math.min(5, killState.multi)]; tier = killState.multi >= 3 ? 3 : 2; }
+    else if (first) { title = 'FIRST BLOOD'; tier = 3; }
+    else if (ended >= 3) { title = 'SHUTDOWN'; tier = 2; }
+    else if (SPREE[player.streak]) { title = SPREE[player.streak]; tier = 2; }
+    const sub = `${victim.name.toUpperCase()}${head ? ' · HEADSHOT' : ''} · ${ordinal(player.kills)} KILL`;
+    hud.banner(title, sub, tier);
+    audio.announce(tier);
+  } else if (first) {
+    hud.toast(`${killer.name} drew first blood`, 2);
+  }
 }
 
 // ---------- Player actions ----------
+const recoil = { pending: 0, yaw: 0, applied: 0 };
 function playerUpdate(dt, inp) {
   const lo = playerLo;
   if (!player.alive) {
@@ -222,6 +254,14 @@ function playerUpdate(dt, inp) {
   const adsSens = inp.ads ? SIGHTS[lo.gun.id].adsSens : 1;
   player.yaw -= inp.lookX * adsSens;
   player.pitch -= inp.lookY * adsSens;
+  // Ease queued recoil in, then pull part of it back down once you stop shooting
+  const kick = recoil.pending * Math.min(1, dt * 30), kickYaw = recoil.yaw * Math.min(1, dt * 30);
+  player.pitch += kick; recoil.pending -= kick; recoil.applied += kick;
+  player.yaw += kickYaw; recoil.yaw -= kickYaw;
+  if (!inp.fire) {
+    const back = recoil.applied * Math.min(1, dt * 7) * 0.6;
+    player.pitch -= back; recoil.applied -= back / 0.6;
+  }
   player.pitch = Math.max(-1.45, Math.min(1.45, player.pitch));
 
   // Weapons
@@ -246,6 +286,9 @@ function playerUpdate(dt, inp) {
   }, boxes);
   lo.update(dt);
 
+  // Crosshair turns red while it sits on an enemy
+  hud.crosshairOn(aimedEnemy());
+
   if (firing && player.alive) {
     // Aim along the camera centre, then shoot from the eye toward that point
     const camDir = rig.dir;
@@ -263,8 +306,9 @@ function playerUpdate(dt, inp) {
     const fired = combat.tryFire(player, lo, eye, dir, inp.ads, game.chars, boxes, muzzle, onHit);
     if (fired) {
       const g = lo.gun;
-      player.pitch += g.recoil * (inp.ads ? 0.6 : 1) * Math.PI / 180;
-      player.yaw += (Math.random() - 0.5) * g.recoil * 0.5 * Math.PI / 180;
+      // Recoil is queued and eased in over a few frames instead of snapping the view
+      recoil.pending += g.recoil * (inp.ads ? 0.6 : 1) * Math.PI / 180;
+      recoil.yaw += (Math.random() - 0.5) * g.recoil * 0.45 * Math.PI / 180;
       rig.recoilKick = 1;
     }
   }
@@ -332,6 +376,17 @@ function equip() {
   const id = playerLo.gun.id;
   rig.setGun(id);
   player.setGun(id);
+}
+
+function aimedEnemy() {
+  const o = camera.position, d = rig.dir;
+  let wall = 200;
+  for (const b of boxes) { const t = rayBoxQuick(o, d, b, wall); if (t < wall) wall = t; }
+  for (const c of game.chars) {
+    if (!c.alive || c.team === player.team) continue;
+    for (const hb of c.hitboxes()) if (rayBoxQuick(o, d, hb, wall) < wall) return true;
+  }
+  return false;
 }
 
 function rayBoxQuick(o, d, b, max) {

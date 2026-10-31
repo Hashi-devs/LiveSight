@@ -1,8 +1,12 @@
-// Touch controls (floating left joystick, right-side look, buttons) plus keyboard/mouse for testing.
-// Each frame, read() returns movement, look deltas and one-shot button presses.
+// Touch controls on Pointer Events (each finger stays captured by the control it started on),
+// plus keyboard/mouse for desktop testing.
+//  - Left side: floating joystick (push past the ring to sprint)
+//  - Right side: drag to look
+//  - Fire buttons: hold to shoot AND drag to aim; the button follows your thumb, like Blood Strike
 
 const JOY_RADIUS = 60;
-const SPRINT_PUSH = 1.35; // drag past the ring to sprint
+const SPRINT_PUSH = 1.35;
+const FIRE_FOLLOW = 46; // how far the fire button can travel with your thumb (px)
 
 export class Input {
   constructor(root, settings) {
@@ -10,104 +14,124 @@ export class Input {
     this.settings = settings;
     this.mx = 0; this.my = 0; this.sprintTouch = false;
     this.lookDX = 0; this.lookDY = 0;
+    this.fireCount = 0; // fingers currently on fire buttons
     this.held = { fire: false, ads: false };
     this.edges = {};
     this.keys = new Set();
-    this.joy = null;   // { id, ox, oy }
-    this.looks = new Map(); // touch id -> {x, y}
-    this.crouchBtn = { down: 0, consumed: false, lastTap: 0 };
+    this.joy = null;              // { id, ox, oy }
+    this.looks = new Map();       // pointerId -> { x, y }
     this.adsToggled = false;
     this.enabled = false;
+    this.editing = false;         // HUD layout editor active
 
     this.joyBase = root.querySelector('#joy');
     this.joyKnob = root.querySelector('#joy-knob');
-    this.bindTouch();
+    this.bindArea();
     this.bindButtons();
     this.bindKeys();
   }
 
   edge(name) { this.edges[name] = true; }
 
-  bindTouch() {
+  // ---------- Open screen area: joystick + look ----------
+  bindArea() {
     const area = this.root.querySelector('#touch-area');
-    area.addEventListener('touchstart', (e) => {
+    area.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' || this.editing) return;
       e.preventDefault();
-      for (const t of e.changedTouches) {
-        if (!this.joy && t.clientX < window.innerWidth * 0.42) {
-          this.joy = { id: t.identifier, ox: t.clientX, oy: t.clientY };
-          this.joyBase.style.display = 'block';
-          this.joyBase.style.left = t.clientX + 'px';
-          this.joyBase.style.top = t.clientY + 'px';
-          this.joyKnob.style.transform = 'translate(-50%,-50%)';
-        } else {
-          this.looks.set(t.identifier, { x: t.clientX, y: t.clientY });
-        }
+      area.setPointerCapture(e.pointerId);
+      if (!this.joy && e.clientX < window.innerWidth * 0.42) {
+        this.joy = { id: e.pointerId, ox: e.clientX, oy: e.clientY };
+        Object.assign(this.joyBase.style, { display: 'block', left: e.clientX + 'px', top: e.clientY + 'px' });
+        this.joyKnob.style.transform = 'translate(-50%,-50%)';
+      } else {
+        this.looks.set(e.pointerId, { x: e.clientX, y: e.clientY });
       }
-    }, { passive: false });
-    const move = (e) => {
-      e.preventDefault();
-      for (const t of e.changedTouches) {
-        if (this.joy && t.identifier === this.joy.id) {
-          let dx = t.clientX - this.joy.ox, dy = t.clientY - this.joy.oy;
-          const d = Math.hypot(dx, dy);
-          this.sprintTouch = d > JOY_RADIUS * SPRINT_PUSH && dy < -JOY_RADIUS * 0.6;
-          const k = d > JOY_RADIUS ? JOY_RADIUS / d : 1;
-          dx *= k; dy *= k;
-          this.mx = dx / JOY_RADIUS; this.my = -dy / JOY_RADIUS;
-          this.joyKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-          this.joyKnob.classList.toggle('sprint', this.sprintTouch);
-        } else if (this.looks.has(t.identifier)) {
-          const p = this.looks.get(t.identifier);
-          this.lookDX += t.clientX - p.x; this.lookDY += t.clientY - p.y;
-          p.x = t.clientX; p.y = t.clientY;
-        }
-      }
-    };
+    });
+    area.addEventListener('pointermove', (e) => {
+      if (this.joy && e.pointerId === this.joy.id) {
+        let dx = e.clientX - this.joy.ox, dy = e.clientY - this.joy.oy;
+        const d = Math.hypot(dx, dy);
+        this.sprintTouch = d > JOY_RADIUS * SPRINT_PUSH && dy < -JOY_RADIUS * 0.6;
+        const k = d > JOY_RADIUS ? JOY_RADIUS / d : 1;
+        dx *= k; dy *= k;
+        this.mx = dx / JOY_RADIUS; this.my = -dy / JOY_RADIUS;
+        this.joyKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+        this.joyKnob.classList.toggle('sprint', this.sprintTouch);
+      } else this.trackLook(e);
+    });
     const end = (e) => {
-      for (const t of e.changedTouches) {
-        if (this.joy && t.identifier === this.joy.id) {
-          this.joy = null; this.mx = this.my = 0; this.sprintTouch = false;
-          this.joyBase.style.display = 'none';
-        }
-        this.looks.delete(t.identifier);
+      if (this.joy && e.pointerId === this.joy.id) {
+        this.joy = null; this.mx = this.my = 0; this.sprintTouch = false;
+        this.joyBase.style.display = 'none';
       }
+      this.looks.delete(e.pointerId);
     };
-    window.addEventListener('touchmove', move, { passive: false });
-    window.addEventListener('touchend', end);
-    window.addEventListener('touchcancel', end);
+    area.addEventListener('pointerup', end);
+    area.addEventListener('pointercancel', end);
   }
 
+  trackLook(e) {
+    const p = this.looks.get(e.pointerId);
+    if (!p) return;
+    this.lookDX += e.clientX - p.x; this.lookDY += e.clientY - p.y;
+    p.x = e.clientX; p.y = e.clientY;
+  }
+
+  // ---------- Buttons ----------
   bindButtons() {
-    const btn = (id, onDown, onUp) => {
+    const btn = (id, down, up, opts = {}) => {
       const el = this.root.querySelector(id);
       if (!el) return;
-      el.addEventListener('touchstart', (e) => {
+      el.addEventListener('pointerdown', (e) => {
+        if (this.editing) return;
         e.preventDefault(); e.stopPropagation();
-        for (const t of e.changedTouches) {
-          // Fire buttons also steer the aim while held, like most mobile shooters
-          if (el.dataset.look) this.looks.set(t.identifier, { x: t.clientX, y: t.clientY });
+        if (e.pointerType !== 'mouse') el.setPointerCapture(e.pointerId);
+        el.classList.add('down');
+        if (opts.aim) {
+          this.looks.set(e.pointerId, { x: e.clientX, y: e.clientY, ox: e.clientX, oy: e.clientY });
         }
-        el.classList.add('down'); onDown && onDown();
-      }, { passive: false });
-      el.addEventListener('touchend', (e) => { e.preventDefault(); el.classList.remove('down'); onUp && onUp(); }, { passive: false });
-      el.addEventListener('mousedown', (e) => { e.stopPropagation(); onDown && onDown(); });
-      el.addEventListener('mouseup', () => onUp && onUp());
+        down && down(e);
+      });
+      el.addEventListener('pointermove', (e) => {
+        if (!opts.aim || !this.looks.has(e.pointerId)) return;
+        const p = this.looks.get(e.pointerId);
+        this.trackLook(e);
+        // the fire button drifts with the thumb, up to a limit
+        let fx = e.clientX - p.ox, fy = e.clientY - p.oy;
+        const d = Math.hypot(fx, fy);
+        if (d > FIRE_FOLLOW) { fx *= FIRE_FOLLOW / d; fy *= FIRE_FOLLOW / d; }
+        el.style.translate = `${fx}px ${fy}px`;
+      });
+      const release = (e) => {
+        if (!el.classList.contains('down')) return;
+        el.classList.remove('down');
+        el.style.translate = '';
+        this.looks.delete(e.pointerId);
+        up && up(e);
+      };
+      el.addEventListener('pointerup', release);
+      el.addEventListener('pointercancel', release);
+      el.addEventListener('lostpointercapture', release);
     };
-    btn('#btn-fire', () => (this.held.fire = true), () => (this.held.fire = false));
-    btn('#btn-fire-l', () => (this.held.fire = true), () => (this.held.fire = false));
+    const fireDown = () => { this.fireCount++; this.held.fire = true; };
+    const fireUp = () => { this.fireCount = Math.max(0, this.fireCount - 1); if (!this.fireCount) this.held.fire = false; };
+    btn('#btn-fire', fireDown, fireUp, { aim: true });
+    btn('#btn-fire-l', fireDown, fireUp, { aim: true });
     btn('#btn-ads', () => (this.adsToggled = !this.adsToggled));
     btn('#btn-jump', () => this.edge('jump'));
     btn('#btn-reload', () => this.edge('reload'));
-    btn('#btn-swap', () => this.edge('swap'));
     btn('#btn-heal', () => this.edge('heal'));
     btn('#btn-cam', () => this.edge('camera'));
+    btn('#btn-prone', () => this.edge('prone'));
+    this.root.querySelectorAll('.slot').forEach((el, i) => btn('#' + el.id, () => this.edge('w' + i)));
 
-    // Crouch: tap = crouch/stand, hold = prone, double-tap while moving = dive roll
-    const c = this.crouchBtn;
+    // Crouch: tap = crouch/stand · double-tap while moving = dive roll · hold = prone (only if turned on)
+    const c = { consumed: false, lastTap: 0, timer: 0 };
     btn('#btn-crouch', () => {
-      c.down = performance.now(); c.consumed = false;
+      c.consumed = false;
       clearTimeout(c.timer);
-      c.timer = setTimeout(() => { c.consumed = true; this.edge('prone'); }, 350);
+      if (this.settings.holdProne) c.timer = setTimeout(() => { c.consumed = true; this.edge('prone'); }, 350);
     }, () => {
       clearTimeout(c.timer);
       if (c.consumed) return;
@@ -122,19 +146,19 @@ export class Input {
       if (e.repeat) return;
       this.keys.add(e.code);
       const map = { Space: 'jump', KeyC: 'crouch', KeyZ: 'prone', KeyQ: 'roll', KeyR: 'reload', KeyE: 'swap',
-        KeyH: 'heal', KeyV: 'camera', Digit1: 'w0', Digit2: 'w1', Digit3: 'w2', ControlLeft: 'crouch' };
+        KeyH: 'heal', KeyV: 'camera', Digit1: 'w0', Digit2: 'w1', Digit3: 'w2' };
       if (map[e.code]) this.edge(map[e.code]);
     });
     window.addEventListener('keyup', (e) => this.keys.delete(e.code));
     const canvas = this.root.querySelector('canvas');
     window.addEventListener('mousedown', (e) => {
-      if (!this.enabled || e.target.closest('.btn, .panel, button')) return;
+      if (!this.enabled || this.editing || e.target.closest('.btn, .screen, .slot, button, #editor')) return;
       if (document.pointerLockElement !== canvas) { canvas.requestPointerLock?.(); return; }
       if (e.button === 0) this.held.fire = true;
       if (e.button === 2) this.held.ads = true;
     });
     window.addEventListener('mouseup', (e) => {
-      if (e.button === 0) this.held.fire = false;
+      if (e.button === 0 && !this.fireCount) this.held.fire = false;
       if (e.button === 2) this.held.ads = false;
     });
     window.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -143,7 +167,6 @@ export class Input {
     });
   }
 
-  // Returns this frame's input and clears one-shot presses.
   read() {
     const k = this.keys;
     let mx = this.mx, my = this.my;
@@ -153,7 +176,7 @@ export class Input {
       if (kx || ky) { mx = kx; my = ky; const l = Math.hypot(mx, my); mx /= l; my /= l; }
     }
     const sprint = this.sprintTouch || k.has('ShiftLeft') || (this.settings.autoSprint && my > 0.9);
-    // Look sensitivity adapts to screen size: one screen-width drag turns about 160 degrees
+    // Sensitivity adapts to screen size: one screen-width drag turns about 160 degrees
     const radPerPx = (Math.PI * 0.9) / Math.max(320, window.innerWidth) * this.settings.sensitivity;
     const mouseScale = document.pointerLockElement ? 0.35 : 1;
     const out = {
@@ -170,8 +193,9 @@ export class Input {
   }
 
   reset() {
-    this.held.fire = false; this.held.ads = false; this.adsToggled = false;
-    this.mx = this.my = 0; this.joy = null; this.looks.clear();
+    this.held.fire = false; this.held.ads = false; this.adsToggled = false; this.fireCount = 0;
+    this.mx = this.my = 0; this.joy = null; this.looks.clear(); this.sprintTouch = false;
     this.joyBase.style.display = 'none';
+    this.root.querySelectorAll('.btn').forEach((b) => { b.classList.remove('down'); b.style.translate = ''; });
   }
 }

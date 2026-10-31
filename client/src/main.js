@@ -9,12 +9,14 @@ import { Combat, Loadout } from './combat.js';
 import { BotBrain } from './bots.js';
 import { Hud } from './hud.js';
 import { Audio } from './audio.js';
+import { Layout } from './layout.js';
+import { SIGHTS } from './guns.js';
 
 const $ = (id) => document.getElementById(id);
 
 // ---------- Settings (saved per phone) ----------
 const settings = Object.assign(
-  { sensitivity: 1, camera: 'adaptive', graphics: 'auto', autoSprint: false, showFps: false },
+  { sensitivity: 1, camera: 'adaptive', graphics: 'auto', autoSprint: false, showFps: false, holdProne: false },
   load('ls-settings')
 );
 function load(k) { try { return JSON.parse(localStorage.getItem(k)) || {}; } catch { return {}; } }
@@ -73,6 +75,7 @@ const rig = new CameraRig(camera);
 rig.mode = settings.camera;
 const hud = new Hud(boxes);
 const input = new Input($('app'), settings);
+const layout = new Layout(input, () => openSettings(game.running));
 
 const BLUE_NAMES = ['Ada', 'Tunde', 'Kemi', 'Chidi'];
 const RED_NAMES = ['Bayo', 'Ngozi', 'Femi', 'Zainab', 'Emeka'];
@@ -93,7 +96,7 @@ const game = {
   heal: null,
   medkits: 2, cells: 2,
   botFire(bot, lo, eye, dir) {
-    combat.tryFire(bot, lo, eye, dir, false, game.chars, boxes, null, onHit);
+    combat.tryFire(bot, lo, eye, dir, false, game.chars, boxes, gunMuzzle(bot.model.gun), onHit);
   },
 };
 
@@ -108,6 +111,7 @@ function addBot(name, team, opts) {
   scene.add(c.model.root);
   const lo = new Loadout([Math.random() < 0.5 ? 'ar_auto' : 'smg_fast']);
   const brain = new BotBrain(c, lo, opts);
+  c.setGun(lo.gun.id);
   game.bots.push(brain);
   game.chars.push(c);
   return brain;
@@ -143,6 +147,8 @@ function startMatch(mode) {
     player.spawnAt(-55, 0, -Math.PI / 2, 0);
   }
   playerLo.refill(); playerLo.cur = 0;
+  equip();
+  hud.clearNumbers();
   input.reset();
   input.enabled = true;
   game.running = true; game.paused = false;
@@ -173,6 +179,7 @@ function onHit(shooter, res) {
   if (shooter === player) {
     t.markedT = MATCH.hitMarkTime;
     hud.hitmarker(res.killed ? 'kill' : res.head ? 'head' : 'body');
+    hud.damageNumber(t, res.dmg, res.head);
     res.killed ? audio.kill() : audio.hit(res.head);
   }
   if (t === player) {
@@ -212,15 +219,18 @@ function playerUpdate(dt, inp) {
   hud.center('');
 
   // Look
-  player.yaw -= inp.lookX * (inp.ads ? 0.6 : 1);
-  player.pitch -= inp.lookY * (inp.ads ? 0.6 : 1);
+  const adsSens = inp.ads ? SIGHTS[lo.gun.id].adsSens : 1;
+  player.yaw -= inp.lookX * adsSens;
+  player.pitch -= inp.lookY * adsSens;
   player.pitch = Math.max(-1.45, Math.min(1.45, player.pitch));
 
   // Weapons
+  const before = lo.cur;
   if (inp.swap) lo.swap();
   if (inp.w0) lo.swap(0);
   if (inp.w1) lo.swap(1);
   if (inp.w2) lo.swap(2);
+  if (lo.cur !== before) equip();
   if (inp.reload && lo.reload()) audio.reload();
   if (inp.heal) startHeal();
 
@@ -269,9 +279,10 @@ function playerUpdate(dt, inp) {
     }
   } else hud.progress(null);
 
-  hud.ammo(lo);
+  hud.weapons(lo, SIGHTS[lo.gun.id].label);
   hud.healCount(game.medkits, game.cells);
-  hud.crosshair(combat.spreadFor(player, lo, inp.ads), camera.fov, true);
+  hud.stance(player, inp.ads);
+  hud.sights(combat.spreadFor(player, lo, inp.ads), camera.fov, rig.scoped || 0, SIGHTS[lo.gun.id].type);
 }
 
 function startHeal() {
@@ -282,13 +293,23 @@ function startHeal() {
 }
 
 const _m = new THREE.Vector3();
+function gunMuzzle(gun) {
+  if (!gun) return null;
+  return gun.localToWorld(_m.set(0, 0.05, gun.userData.muzzleZ)).clone();
+}
 function muzzlePos() {
   if (rig.blend < 0.5) {
-    return _m.set(0.22, -0.2, -1.15).applyMatrix4(camera.matrixWorld).clone();
+    const g = rig.viewmodel.children[0];
+    camera.updateMatrixWorld();
+    return g ? gunMuzzle(g) : camera.position.clone();
   }
-  const f = player.aimDir(new THREE.Vector3());
-  const r = new THREE.Vector3(Math.cos(player.yaw), 0, -Math.sin(player.yaw));
-  return player.eye().addScaledVector(f, 0.9).addScaledVector(r, 0.15).add(new THREE.Vector3(0, -0.28, 0));
+  return gunMuzzle(player.model.gun);
+}
+
+function equip() {
+  const id = playerLo.gun.id;
+  rig.setGun(id);
+  player.setGun(id);
 }
 
 function rayBoxQuick(o, d, b, max) {
@@ -351,6 +372,7 @@ function frame(now) {
     hud.vitals(player.hp, player.shield);
     hud.camLabel(rig.mode);
     hud.minimap(player, game.chars);
+    hud.updateNumbers(dt, camera);
     hud.update(dt);
   } else {
     // Slow orbit behind the menus
@@ -403,6 +425,7 @@ function openSettings(inMatch) {
   $('set-gfx').value = settings.graphics;
   $('set-autosprint').checked = settings.autoSprint;
   $('set-fps').checked = settings.showFps;
+  $('set-holdprone').checked = settings.holdProne;
   $('set-quit').classList.toggle('hidden', !inMatch);
   $('settings').classList.remove('hidden');
   input.reset();
@@ -419,7 +442,17 @@ $('set-gfx').addEventListener('change', (e) => {
 });
 $('set-autosprint').addEventListener('change', (e) => (settings.autoSprint = e.target.checked));
 $('set-fps').addEventListener('change', (e) => (settings.showFps = e.target.checked));
-$('set-close').addEventListener('click', () => { save(); $('settings').classList.add('hidden'); game.paused = false; last = performance.now(); });
+$('set-holdprone').addEventListener('change', (e) => (settings.holdProne = e.target.checked));
+$('set-layout').addEventListener('click', () => {
+  save();
+  $('settings').classList.add('hidden');
+  if (!game.running) { $('hud').classList.remove('hidden'); $('menu').classList.add('hidden'); }
+  layout.open();
+});
+$('set-close').addEventListener('click', () => {
+  save(); $('settings').classList.add('hidden'); game.paused = false; last = performance.now();
+  if (!game.running) { $('hud').classList.add('hidden'); $('menu').classList.remove('hidden'); }
+});
 $('set-quit').addEventListener('click', () => { save(); $('settings').classList.add('hidden'); endMatch(); });
 $('end-again').addEventListener('click', () => startMatch(game.mode));
 $('end-menu').addEventListener('click', () => { $('end').classList.add('hidden'); $('menu').classList.remove('hidden'); });
@@ -431,4 +464,5 @@ $('loading').classList.add('hidden');
 requestAnimationFrame(frame);
 
 // Exposed for automated tests
-window.__ls = { game, player, playerLo, rig, input, startMatch, settings };
+window.__ls = { game, player, playerLo, rig, input, startMatch, settings, layout, hud };
+equip();

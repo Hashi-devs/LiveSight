@@ -4,8 +4,8 @@ import { rayBox } from './physics.js';
 
 // Phase 1 guns. Spread in degrees; damage falls off between range[0] and range[1] down to minMul.
 export const GUNS = {
-  ar_auto:     { name: 'Assault Rifle', dmg: 20, rpm: 600, auto: true,  mag: 30, reload: 2.0, hip: 3.0, ads: 0.5, recoil: 0.85, range: [25, 60], minMul: 0.7,  adsFov: 55 },
-  smg_fast:    { name: 'SMG',           dmg: 14, rpm: 900, auto: true,  mag: 25, reload: 1.6, hip: 3.6, ads: 1.0, recoil: 0.55, range: [12, 35], minMul: 0.6,  adsFov: 60 },
+  ar_auto:     { name: 'Assault Rifle', dmg: 20, rpm: 600, auto: true,  mag: 30, reload: 2.0, hip: 3.0, ads: 0.5, recoil: 0.85, range: [25, 60], minMul: 0.7,  adsFov: 38 },
+  smg_fast:    { name: 'SMG',           dmg: 14, rpm: 900, auto: true,  mag: 25, reload: 1.6, hip: 3.6, ads: 1.0, recoil: 0.55, range: [12, 35], minMul: 0.6,  adsFov: 58 },
   pistol_fast: { name: 'Pistol',        dmg: 25, rpm: 360, auto: false, mag: 12, reload: 1.3, hip: 2.0, ads: 0.4, recoil: 1.3,  range: [15, 40], minMul: 0.65, adsFov: 62 },
 };
 export const HEADSHOT = 1.75;

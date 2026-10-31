@@ -16,51 +16,66 @@
   <!-- HUD -->
   <div id="hud" class="hidden">
     <div id="scorebar">
-      <span class="team blue"><b id="score-blue">0</b></span>
-      <span id="timer">8:00</span>
-      <span class="team red"><b id="score-red">0</b></span>
-      <div id="target-line">First to 25</div>
+      <div class="sb-team blue"><span>BLUE</span><b id="score-blue">0</b></div>
+      <div class="sb-mid"><b id="timer">8:00</b><span id="target-line">FIRST TO 25</span></div>
+      <div class="sb-team red"><b id="score-red">0</b><span>RED</span></div>
     </div>
-    <canvas id="minimap" width="150" height="100"></canvas>
+    <div id="mm-wrap"><canvas id="minimap" width="150" height="100"></canvas></div>
     <div id="killfeed"></div>
-    <div id="crosshair"><i></i><i></i><i></i><i></i></div>
+    <div id="dmgnums"></div>
+    <div id="scope"><i class="h"></i><i class="v"></i><i class="dot"></i></div>
+    <div id="reddot"></div>
+    <div id="crosshair"><i></i><i></i><i></i><i></i><b></b></div>
     <div id="hitmark"></div>
     <div id="dmgdir"></div>
     <div id="toast"></div>
     <div id="center-msg"></div>
-    <div id="vitals">
-      <div class="bar shield"><div id="shield-fill"></div></div>
-      <div class="bar hp"><div id="hp-fill"></div></div>
-      <div id="vitals-num"><span id="hp-num">100</span> HP · <span id="sh-num">75</span> shield</div>
+    <div id="status">
+      <div class="st-name">YOU <small id="st-sight">2× scope</small></div>
+      <div id="shield-segs"><i></i><i></i><i></i><i></i></div>
+      <div class="hpbar"><div id="hp-fill"></div><span id="hp-num">100</span></div>
     </div>
-    <div id="ammo"><b id="ammo-num">30</b><span id="ammo-mag">/30</span><div id="gun-name">Assault Rifle</div></div>
+    <div id="weapons" data-layout>
+      <div class="slot" id="slot-0"><span class="w-name">AR</span><b class="w-ammo">30</b></div>
+      <div class="slot" id="slot-1"><span class="w-name">SMG</span><b class="w-ammo">25</b></div>
+      <div class="slot" id="slot-2"><span class="w-name">PISTOL</span><b class="w-ammo">12</b></div>
+    </div>
     <div id="progress" class="hidden"><div id="progress-fill"></div><span id="progress-label">Healing</span></div>
     <div id="fps" class="hidden"></div>
 
-    <!-- Touch buttons -->
-    <button class="btn" id="btn-gear" title="Settings">⚙</button>
-    <button class="btn" id="btn-cam" title="Camera mode">TPS</button>
-    <button class="btn big" id="btn-fire" data-look="1">FIRE</button>
-    <button class="btn" id="btn-fire-l" data-look="1">FIRE</button>
-    <button class="btn" id="btn-ads">AIM</button>
-    <button class="btn" id="btn-jump">JUMP</button>
-    <button class="btn" id="btn-crouch">CROUCH</button>
-    <button class="btn" id="btn-reload">R</button>
-    <button class="btn" id="btn-swap">SWAP</button>
-    <button class="btn" id="btn-heal">HEAL<small id="heal-count">2·2</small></button>
+    <button class="btn" id="btn-gear" title="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button>
+    <button class="btn" id="btn-cam" data-layout title="Camera mode"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><small id="cam-label">AUTO</small></button>
+    <button class="btn fire" id="btn-fire" data-layout><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c2.2 2 3.2 4.6 3.2 7.2V17H8.8V9.7c0-2.6 1-5.2 3.2-7.2z"/><path d="M7.5 20.5h9"/></svg></button>
+    <button class="btn fire" id="btn-fire-l" data-layout><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c2.2 2 3.2 4.6 3.2 7.2V17H8.8V9.7c0-2.6 1-5.2 3.2-7.2z"/><path d="M7.5 20.5h9"/></svg></button>
+    <button class="btn" id="btn-ads" data-layout><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.5"/><path d="M12 1.5v6M12 16.5v6M1.5 12h6M16.5 12h6"/><circle cx="12" cy="12" r="1" class="fill"/></svg></button>
+    <button class="btn" id="btn-jump" data-layout><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l7-7 7 7"/><path d="M5 19l7-7 7 7"/></svg></button>
+    <button class="btn" id="btn-crouch" data-layout><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="13" cy="4.5" r="2.2" class="fill"/><path d="M12 8l-2.5 6h5l1.5 6"/><path d="M9.5 14l-3 6"/><path d="M12 9.5l4 1.5"/></svg></button>
+    <button class="btn" id="btn-prone" data-layout><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="4.5" cy="13.5" r="2.2" class="fill"/><path d="M7.5 15h8.5l5 2.5"/><path d="M9.5 15l2.5-3h4"/></svg></button>
+    <button class="btn" id="btn-reload" data-layout><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 12a7.5 7.5 0 1 1-2.6-5.7"/><path d="M19.5 3.5v5h-5"/></svg></button>
+    <button class="btn" id="btn-heal" data-layout><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5v15M4.5 12h15"/></svg><small id="heal-count">2·2</small></button>
     <div id="joy"><div id="joy-knob"></div></div>
+  </div>
+
+  <!-- HUD layout editor -->
+  <div id="editor" class="hidden">
+    <b id="ed-name">Fire</b>
+    <label>Size <input type="range" id="ed-size" min="36" max="140"></label>
+    <label>Opacity <input type="range" id="ed-opacity" min="0.2" max="1" step="0.05"></label>
+    <button class="menu-btn ghost" id="ed-reset">Reset</button>
+    <button class="menu-btn primary" id="ed-done">Done</button>
+    <span class="ed-hint">Drag any control to move it</span>
   </div>
 
   <!-- Start screen -->
   <div id="menu" class="screen">
     <h1>LIVESIGHT</h1>
-    <p class="sub">Squad Battle · Phase 1 prototype</p>
+    <p class="sub">Squad Battle · Phase 1.1 prototype</p>
     <div class="menu-buttons">
       <button class="menu-btn primary" data-mode="tdm">Team Deathmatch <small>You + 4 bots vs 5 bots</small></button>
       <button class="menu-btn" data-mode="range">Shooting Range <small>Practice on dummies</small></button>
       <button class="menu-btn ghost" id="menu-settings">Settings</button>
     </div>
-    <p class="hint">Left side: move (push past the ring to sprint) · Right side: look · Crouch: tap = crouch, hold = prone, double-tap while moving = dive roll, while sprinting = slide · Jump into ledges to climb</p>
+    <p class="hint">Left side: move (push past the ring to sprint) · Right side: look · Crouch: tap = crouch, double-tap while moving = dive roll, tap while sprinting = slide · Prone has its own button · Drag on Fire to aim · Jump into ledges to climb</p>
     <p class="hint desktop">Keyboard: WASD, mouse, Shift sprint, Space jump, C crouch/slide, Z prone, Q roll, R reload, E swap, H heal, V camera</p>
   </div>
 
@@ -75,9 +90,11 @@
       <select id="set-gfx"><option value="auto">Auto</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select>
     </label>
     <label class="check"><input type="checkbox" id="set-autosprint"> Auto-sprint when pushing fully forward</label>
+    <label class="check"><input type="checkbox" id="set-holdprone"> Hold crouch to go prone (the Prone button always works)</label>
     <label class="check"><input type="checkbox" id="set-fps"> Show frame rate</label>
     <div class="row">
       <button class="menu-btn primary" id="set-close">Done</button>
+      <button class="menu-btn ghost" id="set-layout">Edit HUD layout</button>
       <button class="menu-btn ghost hidden" id="set-quit">Quit match</button>
     </div>
   </div>

@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { MOVE, STANCE, RADIUS, HP_MAX, START_SHIELD, GRAVITY } from './config.js';
 import { moveEntity, spaceFree } from './physics.js';
+import { makeGun } from './guns.js';
 
 const TEAM_COLOR = { blue: 0x3d7bd9, red: 0xd2483c };
 
@@ -33,7 +34,8 @@ export class Character {
     this.markedT = 0;      // hit marker above this character (seen by the player)
     this.lastFiredT = 99;  // seconds since last shot (minimap blips)
     this.walkPhase = 0;
-    this.model = buildSoldier(TEAM_COLOR[team], isPlayer);
+    this.model = buildSoldier(TEAM_COLOR[team]);
+    this.setGun('ar_auto');
   }
 
   get eyeHeight() { return STANCE[this.stance].eye; }
@@ -111,7 +113,7 @@ export class Character {
       else this.setStance('crouch', boxes);
     }
     if (it.prone && this.mode === 'normal' && this.grounded) {
-      if (this.stance === 'prone') this.setStance('crouch', boxes);
+      if (this.stance === 'prone') { if (!this.setStance('stand', boxes)) this.setStance('crouch', boxes); }
       else this.setStance('prone', boxes);
     }
     if (it.roll && this.grounded && this.rollCd === 0 && this.mode !== 'roll' && this.mode !== 'mantle') {
@@ -223,78 +225,130 @@ export class Character {
     this.protectT = protect; this.markedT = 0;
   }
 
-  // Pose the model from the movement state.
+  setGun(id) {
+    const m = this.model;
+    if (m.gun) m.hand.remove(m.gun);
+    m.gun = makeGun(id);
+    m.gun.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    m.hand.add(m.gun);
+  }
+
+  // Pose the jointed model from the movement state.
   syncModel(dt, firstPerson) {
     const m = this.model;
     m.root.visible = !firstPerson;
+    if (firstPerson) return;
     m.root.position.copy(this.pos);
     m.root.rotation.y = this.yaw;
-    const b = m.body, sp = m.spin;
     m.marker.visible = this.markedT > 0 && this.alive;
     m.marker.rotation.y += dt * 3;
-    sp.rotation.set(0, 0, 0);
-    b.rotation.set(0, 0, 0);
-    b.position.set(0, -0.6, 0);
-    m.legL.scale.y = m.legR.scale.y = 1;
+
+    // Defaults: standing, aiming
+    const P = { hipY: 0.92, lean: 0, thL: 0, thR: 0, shL: 0, shR: 0, aim: this.pitch * 0.85, twist: 0, bodyX: 0, bodyY: 0, bodyZ: 0, spin: 0, lift: 0 };
+    const speed = Math.hypot(this.vel.x, this.vel.z);
+    const k = Math.min(1, speed / 4.6);
+    const ph = this.walkPhase;
 
     if (!this.alive) {
-      b.rotation.x = Math.PI / 2; b.position.set(0, -0.35, 0.1);
-      return;
-    }
-    const swing = Math.sin(this.walkPhase) * Math.min(1, Math.hypot(this.vel.x, this.vel.z) / 4) * 0.7;
-    m.legL.rotation.x = swing; m.legR.rotation.x = -swing;
-    m.armPitch.rotation.x = this.pitch * 0.8;
-
-    if (this.mode === 'roll') {
-      sp.rotation.x = -Math.PI * 2 * (1 - this.modeT / MOVE.rollTime);
-      b.position.y = -0.85; m.legL.scale.y = m.legR.scale.y = 0.55;
+      Object.assign(P, { bodyX: Math.PI / 2, bodyY: 0.2, bodyZ: 0.1, aim: 0.6 });
+    } else if (this.mode === 'roll') {
+      Object.assign(P, { hipY: 0.55, thL: 1.5, thR: 1.5, shL: -2.2, shR: -2.2, lean: 0.9, aim: -0.4 });
+      P.spin = -Math.PI * 2 * (1 - this.modeT / MOVE.rollTime);
+    } else if (this.mode === 'slide') {
+      Object.assign(P, { hipY: 0.42, thL: 1.35, shL: -0.25, thR: 0.25, shR: -1.9, lean: -0.35 });
+    } else if (this.mode === 'mantle') {
+      Object.assign(P, { thL: 1.2, shL: -1.6, thR: 0.4, shR: -0.8, lean: 0.4, aim: -0.6 });
     } else if (this.stance === 'prone') {
-      b.rotation.x = -Math.PI / 2; b.position.set(0, -0.35, 0.75);
-      m.armPitch.rotation.x = Math.PI / 2 * 0.9;
+      // lying flat, legs alternate a little while crawling
+      const c = Math.sin(ph * 2.2) * 0.35 * k;
+      Object.assign(P, { bodyX: -Math.PI / 2, bodyY: 0.2, bodyZ: 0.95, headUp: 1.2, thL: c, thR: -c, shL: -Math.max(0, c), shR: -Math.max(0, -c), aim: Math.PI / 2 * 0.95 + this.pitch * 0.5 });
+    } else if (!this.grounded) {
+      Object.assign(P, { thL: 0.75, shL: -1.1, thR: 0.35, shR: -0.7 });
     } else if (this.stance === 'crouch') {
-      b.position.y = -0.98; m.legL.scale.y = m.legR.scale.y = 0.55;
-      if (this.mode === 'slide') b.rotation.x = 0.35;
+      const s = Math.sin(ph) * 0.35 * k;
+      Object.assign(P, { hipY: 0.55 - Math.abs(Math.sin(ph)) * 0.02 * k, thL: 1.1 + s, thR: 1.1 - s, shL: -1.75 - Math.max(0, s), shR: -1.75 - Math.max(0, -s), lean: 0.32 });
+    } else {
+      // walk / run cycle with knee bend, bob, lean and counter-twist
+      const run = this.sprinting ? 1 : 0;
+      const stride = 0.55 + run * 0.25;
+      const sw = Math.sin(ph) * stride * k;
+      P.thL = sw; P.thR = -sw;
+      P.shL = -(0.1 + 0.85 * Math.max(0, Math.sin(ph - 1.2))) * k;
+      P.shR = -(0.1 + 0.85 * Math.max(0, Math.sin(ph + Math.PI - 1.2))) * k;
+      P.hipY = 0.92 - Math.abs(Math.cos(ph)) * 0.05 * k;
+      P.lean = 0.06 * k + run * 0.14;
+      P.twist = Math.sin(ph) * 0.12 * k;
+      if (run) P.aim = -0.75; // gun lowered while sprinting
     }
+
+    m.spin.rotation.x = P.spin;
+    if (P.spin) { m.spin.position.y = 0.6; m.body.position.set(0, -0.6, 0); }
+    else { m.spin.position.y = 0; m.body.position.set(0, P.bodyY, P.bodyZ); }
+    m.body.rotation.x = P.bodyX;
+    m.hips.position.y = P.hipY;
+    m.thighL.rotation.x = P.thL; m.thighR.rotation.x = P.thR;
+    m.shinL.rotation.x = P.shL; m.shinR.rotation.x = P.shR;
+    m.torso.rotation.set(-P.lean, P.twist, 0);
+    m.arms.rotation.x = P.aim + P.lean;
+    m.head.rotation.x = Math.max(-0.5, Math.min(0.5, this.pitch * 0.5)) + P.lean * 0.6 + (P.headUp || 0);
   }
 }
 
 const _f = new THREE.Vector3(), _r = new THREE.Vector3(), _d = new THREE.Vector3();
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
-function buildSoldier(teamColor, isPlayer) {
+function buildSoldier(teamColor) {
   const mat = (c) => new THREE.MeshLambertMaterial({ color: c });
-  const team = mat(teamColor), armor = mat(0x2b313b), cloth = mat(0x4a5260), skin = mat(0x6b4a3a);
+  const team = mat(teamColor), armor = mat(0x2b313b), cloth = mat(0x454d5a), skin = mat(0x6b4a3a), boots = mat(0x1d2127);
   const visor = new THREE.MeshBasicMaterial({ color: teamColor === 0xd2483c ? 0xff8a5c : 0x8fd4ff });
-  const box = (w, h, d, m) => new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+  const box = (parent, w, h, d, m, x, y, z) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); b.position.set(x, y, z); parent.add(b); return b; };
+  const group = (parent, x, y, z) => { const g = new THREE.Group(); g.position.set(x, y, z); parent.add(g); return g; };
 
   const root = new THREE.Group();
-  const spin = new THREE.Group(); spin.position.y = 0.6; root.add(spin);
-  const body = new THREE.Group(); body.position.y = -0.6; spin.add(body);
+  const spin = group(root, 0, 0, 0);
+  const body = group(spin, 0, 0, 0);
+  const hips = group(body, 0, 0.92, 0);
+  box(hips, 0.36, 0.16, 0.24, cloth, 0, 0, 0);
 
+  // Legs: thigh -> knee -> shin
   const leg = (x) => {
-    const g = new THREE.Group(); g.position.set(x, 0.86, 0);
-    const l = box(0.2, 0.86, 0.24, cloth); l.position.y = -0.43; g.add(l);
-    const boot = box(0.22, 0.14, 0.3, armor); boot.position.set(0, -0.8, -0.03); g.add(boot);
-    body.add(g); return g;
+    const thigh = group(hips, x, -0.04, 0);
+    box(thigh, 0.17, 0.44, 0.2, cloth, 0, -0.22, 0);
+    box(thigh, 0.18, 0.12, 0.08, armor, 0, -0.2, -0.1); // knee pad
+    const shin = group(thigh, 0, -0.44, 0);
+    box(shin, 0.15, 0.42, 0.17, cloth, 0, -0.21, 0);
+    box(shin, 0.18, 0.1, 0.27, boots, 0, -0.43, -0.04);
+    return { thigh, shin };
   };
-  const legL = leg(-0.12), legR = leg(0.12);
-  const torso = box(0.52, 0.62, 0.3, team); torso.position.y = 1.16; body.add(torso);
-  const vest = box(0.56, 0.36, 0.34, armor); vest.position.y = 1.22; body.add(vest);
-  const pack = box(0.36, 0.42, 0.16, armor); pack.position.set(0, 1.2, 0.24); body.add(pack);
-  const head = box(0.28, 0.3, 0.28, skin); head.position.y = 1.62; body.add(head);
-  const helmet = box(0.33, 0.16, 0.33, team); helmet.position.y = 1.76; body.add(helmet);
-  const vis = box(0.26, 0.08, 0.04, visor); vis.position.set(0, 1.65, -0.15); body.add(vis);
+  const L = leg(-0.1), R = leg(0.1);
 
-  // Arms + gun pitch together with aim
-  const armPitch = new THREE.Group(); armPitch.position.set(0, 1.38, 0); body.add(armPitch);
-  const armL = box(0.13, 0.13, 0.55, team); armL.position.set(-0.22, -0.08, -0.25); armPitch.add(armL);
-  const armR = box(0.13, 0.13, 0.5, team); armR.position.set(0.24, -0.1, -0.2); armPitch.add(armR);
-  const gun = box(0.08, 0.14, 0.75, armor); gun.position.set(0.12, -0.06, -0.5); armPitch.add(gun);
+  // Torso -> chest, head, arms
+  const torso = group(hips, 0, 0.06, 0);
+  box(torso, 0.46, 0.56, 0.26, team, 0, 0.3, 0);
+  box(torso, 0.5, 0.34, 0.31, armor, 0, 0.36, 0);        // plate carrier
+  box(torso, 0.12, 0.1, 0.06, armor, -0.14, 0.24, -0.17); // pouches
+  box(torso, 0.12, 0.1, 0.06, armor, 0.0, 0.24, -0.17);
+  box(torso, 0.34, 0.4, 0.15, armor, 0, 0.32, 0.21);     // backpack
+  box(torso, 0.13, 0.08, 0.3, team, -0.29, 0.54, 0);    // shoulder pads
+  box(torso, 0.13, 0.08, 0.3, team, 0.29, 0.54, 0);
+  const head = group(torso, 0, 0.62, 0);
+  box(head, 0.12, 0.08, 0.12, skin, 0, 0.02, 0);         // neck
+  box(head, 0.26, 0.28, 0.27, skin, 0, 0.18, 0);
+  box(head, 0.31, 0.15, 0.31, team, 0, 0.32, 0.01);      // helmet
+  box(head, 0.32, 0.04, 0.34, armor, 0, 0.25, 0.0);      // helmet rim
+  box(head, 0.24, 0.07, 0.03, visor, 0, 0.2, -0.14);     // visor
 
-  // Hit marker above head (shown for a few seconds after you hit them)
+  // Arms holding the gun: pitch together with aim
+  const arms = group(torso, 0, 0.5, 0);
+  const upper = (x, ry) => { const a = group(arms, x, 0, 0); a.rotation.y = ry; box(a, 0.12, 0.12, 0.3, team, 0, -0.06, -0.12); return a; };
+  const uaL = upper(-0.27, -0.45), uaR = upper(0.27, 0.25);
+  box(uaL, 0.1, 0.1, 0.3, cloth, 0.06, -0.08, -0.38);     // forearms reaching to the gun
+  box(uaR, 0.1, 0.1, 0.24, cloth, -0.03, -0.1, -0.34);
+  const hand = group(arms, 0.1, -0.12, -0.42);
+
   const marker = new THREE.Mesh(new THREE.OctahedronGeometry(0.16), new THREE.MeshBasicMaterial({ color: 0xff3b3b }));
-  marker.position.y = 2.25; marker.visible = false; root.add(marker);
+  marker.position.y = 2.3; marker.visible = false; root.add(marker);
 
   root.traverse((o) => { if (o.isMesh) o.castShadow = true; });
-  return { root, spin, body, legL, legR, armPitch, marker, head };
+  return { root, spin, body, hips, torso, head, arms, hand, thighL: L.thigh, shinL: L.shin, thighR: R.thigh, shinR: R.shin, marker, gun: null };
 }

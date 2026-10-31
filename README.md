@@ -47,3 +47,20 @@ assets/   models (.glb), sounds, fonts (Garet)
 - Graphics: Low / Medium / High picked from the phone's memory, lowered automatically if the frame rate drops
 
 The connection test from Phase 0 is at `/client/test.html`.
+
+## Fonts
+
+| Use | Font | Licence | Where |
+| --- | --- | --- | --- |
+| Headers | Garet (Book, Heavy) | Free for commercial use (Spacetype) | Put `Garet-Heavy` and `Garet-Book` (.otf, .ttf or .woff2) in `assets/fonts/` |
+| Numbers | Danson | Free version is personal use only; buy a licence before selling | Put `Danson` (.otf, .ttf or .woff2) in `assets/fonts/` |
+| Body | Barlow Semi Condensed | SIL OFL, free for commercial use | Installed automatically from npm |
+
+Until the Garet and Danson files are added, the game falls back to Barlow Semi Condensed.
+
+## Phones
+
+- **Android:** Chrome. Tap the menu → *Install app* / *Add to Home screen* to play full screen.
+- **iPhone / iPad:** Safari → Share → *Add to Home Screen*, then open LiveSight from the home screen for full screen (iPhone Safari can't go full screen from a normal tab).
+- **Hosting a hotspot match** needs an Android phone running Termux. iPhones can join as players.
+

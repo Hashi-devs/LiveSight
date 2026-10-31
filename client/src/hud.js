@@ -10,7 +10,8 @@ export class Hud {
   constructor(boxes) {
     this.el = {
       blue: $('score-blue'), red: $('score-red'), timer: $('timer'), target: $('target-line'),
-      hp: $('hp-fill'), hpN: $('hp-num'), segs: [...document.querySelectorAll('#shield-segs i')], sight: $('st-sight'),
+      hp: $('hp-fill'), hpN: $('hp-num'), segs: [...document.querySelectorAll('#shield-segs i')], sight: $('sight-tag'),
+      matchFill: $('match-fill'), alive: $('alive-count'), strip: $('compass-strip'), headingNum: $('heading-num'), squad: $('squad'),
       slots: [0, 1, 2].map((i) => $('slot-' + i)), feed: $('killfeed'),
       hit: $('hitmark'), dmg: $('dmgdir'), toast: $('toast'), center: $('center-msg'),
       cross: $('crosshair'), scope: $('scope'), reddot: $('reddot'),
@@ -23,6 +24,8 @@ export class Hud {
     this.mm = $('minimap').getContext('2d');
     this.mmBg = this.drawMinimapBase(boxes);
     this.numbers = new Map(); // character -> { el, total, t, head }
+    this.buildCompass();
+    this.mates = [];
   }
 
   set(key, el, value) {
@@ -37,7 +40,10 @@ export class Hud {
     el.classList.toggle(name, on);
   }
 
-  score(blue, red, timeLeft, target) {
+  score(blue, red, timeLeft, target, frac = 1, alive = 10) {
+    const f = Math.round(frac * 200) / 2;
+    if (this.cache.mf !== f) { this.cache.mf = f; this.el.matchFill.style.width = f + '%'; }
+    this.set('al', this.el.alive, alive);
     this.set('b', this.el.blue, blue);
     this.set('r', this.el.red, red);
     const t = Math.max(0, Math.ceil(timeLeft));
@@ -61,13 +67,59 @@ export class Hud {
     lo.guns.forEach((g, i) => {
       const el = this.el.slots[i];
       if (!el) return;
+      if (!el._q) el._q = { ammo: el.querySelector('.w-ammo'), mag: el.querySelector('.w-mag'), name: el.querySelector('.w-name') };
       this.cls('s' + i, el, 'active', i === lo.cur);
       this.cls('s' + i, el, 'low', g.ammo <= g.mag * 0.25);
-      this.set('sn' + i, el.firstElementChild, SHORT[g.id] || g.name);
-      const ammo = i === lo.cur && lo.reloadT > 0 ? 'RELOAD' : String(g.ammo);
-      this.set('sa' + i, el.lastElementChild, ammo);
+      const ammo = i === lo.cur && lo.reloadT > 0 ? '··' : String(g.ammo);
+      this.set('sa' + i, el._q.ammo, ammo);
+      this.set('sm' + i, el._q.mag, String(g.mag));
+      this.set('sn' + i, el._q.name, ((SHORT[g.id] || g.name) + (i === lo.cur ? ' · ' + sightLabel : '')).toUpperCase());
     });
-    this.set('sight', this.el.sight, sightLabel);
+  }
+
+  // ---- Compass: heading 0 = north (towards the top of the minimap) ----
+  buildCompass() {
+    const strip = this.el.strip, PX = 2.2; // pixels per degree
+    this.pxPerDeg = PX;
+    const names = { 0: 'N', 45: 'NE', 90: 'E', 135: 'SE', 180: 'S', 225: 'SW', 270: 'W', 315: 'NW' };
+    let html = '';
+    for (let d = -180; d <= 540; d += 15) {
+      const n = ((d % 360) + 360) % 360, x = (d + 180) * PX;
+      html += `<i style="left:${x}px"></i>`;
+      if (names[n] !== undefined) html += `<span class="card" style="left:${x}px">${names[n]}</span>`;
+      else if (n % 15 === 0 && n % 45 !== 0) html += `<span style="left:${x}px">${n}</span>`;
+    }
+    strip.innerHTML = html;
+  }
+  compass(yaw) {
+    const heading = ((-yaw * 180 / Math.PI) % 360 + 360) % 360;
+    const w = this.el.strip.parentElement.clientWidth;
+    const x = Math.round(w / 2 - (heading + 180) * this.pxPerDeg);
+    if (this.cache.cx !== x) { this.cache.cx = x; this.el.strip.style.transform = `translateX(${x}px)`; }
+    this.set('hd', this.el.headingNum, Math.round(heading) % 360);
+  }
+
+  // ---- Squad cards (teammates) ----
+  squad(mates) {
+    if (this.mates.length !== mates.length || this.mates.some((m, i) => m.c !== mates[i])) {
+      this.el.squad.innerHTML = '';
+      this.mates = mates.map((c) => {
+        const el = document.createElement('div');
+        el.className = 'mate';
+        el.innerHTML = `<div class="hx">${c.name[0]}</div><span>${c.name.toUpperCase()}</span><div class="mbars"><i></i><i></i></div>`;
+        this.el.squad.appendChild(el);
+        const [sh, hp] = el.querySelectorAll('.mbars i');
+        return { c, el, sh, hp, last: '' };
+      });
+    }
+    for (const m of this.mates) {
+      const key = `${m.c.alive}|${Math.ceil(m.c.shield)}|${Math.ceil(m.c.hp)}`;
+      if (key === m.last) continue;
+      m.last = key;
+      m.el.classList.toggle('down', !m.c.alive);
+      m.sh.style.width = m.c.shield + '%';
+      m.hp.style.width = m.c.hp + '%';
+    }
   }
 
   stance(ch, adsOn) {

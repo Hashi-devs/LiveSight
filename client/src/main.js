@@ -1,6 +1,6 @@
 // LiveSight Phase 1: solo Squad Battle vs bots, plus a Shooting Range.
 import * as THREE from 'three';
-import { MATCH, QUALITY, detectQuality, HP_MAX, SHIELD_MAX } from './config.js';
+import { MATCH, QUALITY, detectQuality, HP_MAX, SHIELD_MAX, IS_IOS } from './config.js';
 import { buildMap, makeSnow } from './map.js';
 import { Character } from './character.js';
 import { Input } from './input.js';
@@ -8,6 +8,7 @@ import { CameraRig } from './camera.js';
 import { Combat, Loadout } from './combat.js';
 import { BotBrain } from './bots.js';
 import { Hud } from './hud.js';
+import { lineOfSight } from './physics.js';
 import { Audio } from './audio.js';
 import { Layout } from './layout.js';
 import { SIGHTS } from './guns.js';
@@ -155,7 +156,6 @@ function startMatch(mode) {
   $('menu').classList.add('hidden'); $('end').classList.add('hidden'); $('settings').classList.add('hidden');
   $('hud').classList.remove('hidden');
   $('rotate').classList.add('active');
-  $('scorebar').classList.toggle('hidden', mode === 'range');
   hud.toast(mode === 'range' ? 'Shooting Range: dummies respawn, nothing shoots back' : 'Team Deathmatch: first to ' + MATCH.killTarget, 3);
 }
 
@@ -203,7 +203,7 @@ function onKill(killer, victim, head) {
     if (game.score[killer.team] >= MATCH.killTarget) setTimeout(endMatch, 1200);
   }
   const cls = (c) => (c.isPlayer ? 'me' : c.team === 'blue' ? 'b' : 'r');
-  hud.feed(`<span class="${cls(killer)}">${killer.name}</span> ${head ? '◎' : '✕'} <span class="${cls(victim)}">${victim.name}</span>`);
+  hud.feed(`<span class="${cls(killer)}">${killer.name.toUpperCase()}</span><i>${head ? '◆' : '✕'}</i><span class="${cls(victim)}">${victim.name.toUpperCase()}</span>`);
 }
 
 // ---------- Player actions ----------
@@ -233,6 +233,7 @@ function playerUpdate(dt, inp) {
   if (lo.cur !== before) equip();
   if (inp.reload && lo.reload()) audio.reload();
   if (inp.heal) startHeal();
+  if (inp.ping) ping();
 
   const busy = game.heal !== null;
   const firing = inp.fire && !busy;
@@ -283,6 +284,27 @@ function playerUpdate(dt, inp) {
   hud.healCount(game.medkits, game.cells);
   hud.stance(player, inp.ads);
   hud.sights(combat.spreadFor(player, lo, inp.ads), camera.fov, rig.scoped || 0, SIGHTS[lo.gun.id].type);
+}
+
+// Ping: marks the nearest enemy close to your crosshair (within 30 m, in view) for your team
+let pingCd = 0;
+function ping() {
+  const now = performance.now();
+  if (now < pingCd) return;
+  pingCd = now + 1000;
+  const eye = player.eye(), dir = rig.dir;
+  let best = null, bestAng = 0.45; // about 25 degrees
+  for (const c of game.chars) {
+    if (!c.alive || c.team === player.team) continue;
+    const chest = new THREE.Vector3(c.pos.x, c.pos.y + c.height * 0.6, c.pos.z);
+    const to = chest.clone().sub(eye);
+    const d = to.length();
+    if (d > 30) continue;
+    const ang = to.normalize().angleTo(dir);
+    if (ang < bestAng && lineOfSight(boxes, eye, chest)) { best = c; bestAng = ang; }
+  }
+  if (best) { best.markedT = MATCH.hitMarkTime; hud.toast('Enemy spotted · ' + Math.round(best.pos.distanceTo(player.pos)) + ' m'); audio.tone(980, 0.09, 'triangle', 0.15); }
+  else hud.toast('No enemy nearby', 1);
 }
 
 function startHeal() {
@@ -368,7 +390,10 @@ function frame(now) {
       game.timeLeft -= dt;
       if (game.timeLeft <= 0) endMatch();
     }
-    hud.score(game.score.blue, game.score.red, game.timeLeft, `First to ${MATCH.killTarget}`);
+    const alive = game.chars.filter((c) => c.alive).length;
+    hud.score(game.score.blue, game.score.red, game.timeLeft, game.mode === 'tdm' ? `FIRST TO ${MATCH.killTarget}` : 'SHOOTING RANGE', game.timeLeft / MATCH.timeLimit, alive);
+    hud.compass(player.yaw);
+    hud.squad(game.chars.filter((c) => c.team === player.team && !c.isPlayer));
     hud.vitals(player.hp, player.shield);
     hud.camLabel(rig.mode);
     hud.minimap(player, game.chars);
@@ -413,7 +438,7 @@ async function goFullscreen() {
 
 document.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => {
   audio.start();
-  if (matchMedia('(pointer: coarse)').matches) goFullscreen();
+  if (matchMedia('(pointer: coarse)').matches && !IS_IOS) goFullscreen();
   startMatch(b.dataset.mode);
 }));
 
@@ -456,6 +481,13 @@ $('set-close').addEventListener('click', () => {
 $('set-quit').addEventListener('click', () => { save(); $('settings').classList.add('hidden'); endMatch(); });
 $('end-again').addEventListener('click', () => startMatch(game.mode));
 $('end-menu').addEventListener('click', () => { $('end').classList.add('hidden'); $('menu').classList.remove('hidden'); });
+
+// ---------- Phone setup (Android + iOS) ----------
+// Block pinch-zoom / double-tap zoom on iOS Safari, which ignores user-scalable=no
+document.addEventListener('gesturestart', (e) => e.preventDefault());
+document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
+const standalone = matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || navigator.standalone;
+if (IS_IOS && !standalone) document.querySelector('.hint.ios').classList.remove('hidden');
 
 // ---------- Go ----------
 applyQuality();

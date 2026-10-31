@@ -43,6 +43,7 @@ export class Input {
       if (!this.joy && e.clientX < window.innerWidth * 0.42) {
         this.joy = { id: e.pointerId, ox: e.clientX, oy: e.clientY };
         Object.assign(this.joyBase.style, { display: 'block', left: e.clientX + 'px', top: e.clientY + 'px' });
+        document.body.classList.add('joy-active');
         this.joyKnob.style.transform = 'translate(-50%,-50%)';
       } else {
         this.looks.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -64,6 +65,7 @@ export class Input {
       if (this.joy && e.pointerId === this.joy.id) {
         this.joy = null; this.mx = this.my = 0; this.sprintTouch = false;
         this.joyBase.style.display = 'none';
+        document.body.classList.remove('joy-active');
       }
       this.looks.delete(e.pointerId);
     };
@@ -124,6 +126,7 @@ export class Input {
     btn('#btn-heal', () => this.edge('heal'));
     btn('#btn-cam', () => this.edge('camera'));
     btn('#btn-prone', () => this.edge('prone'));
+    btn('#btn-ping', () => this.edge('ping'));
     this.root.querySelectorAll('.slot').forEach((el, i) => btn('#' + el.id, () => this.edge('w' + i)));
 
     // Crouch: tap = crouch/stand · double-tap while moving = dive roll · hold = prone (only if turned on)
@@ -146,7 +149,7 @@ export class Input {
       if (e.repeat) return;
       this.keys.add(e.code);
       const map = { Space: 'jump', KeyC: 'crouch', KeyZ: 'prone', KeyQ: 'roll', KeyR: 'reload', KeyE: 'swap',
-        KeyH: 'heal', KeyV: 'camera', Digit1: 'w0', Digit2: 'w1', Digit3: 'w2' };
+        KeyH: 'heal', KeyV: 'camera', KeyF: 'ping', Digit1: 'w0', Digit2: 'w1', Digit3: 'w2' };
       if (map[e.code]) this.edge(map[e.code]);
     });
     window.addEventListener('keyup', (e) => this.keys.delete(e.code));
@@ -196,6 +199,7 @@ export class Input {
     this.held.fire = false; this.held.ads = false; this.adsToggled = false; this.fireCount = 0;
     this.mx = this.my = 0; this.joy = null; this.looks.clear(); this.sprintTouch = false;
     this.joyBase.style.display = 'none';
+    document.body.classList.remove('joy-active');
     this.root.querySelectorAll('.btn').forEach((b) => { b.classList.remove('down'); b.style.translate = ''; });
   }
 }

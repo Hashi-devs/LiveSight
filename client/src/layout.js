@@ -3,21 +3,25 @@
 // x, y = centre as a fraction of screen width/height. s = size in px (diameter). o = opacity.
 
 export const DEFAULT_LAYOUT = {
-  'btn-fire':   { x: 0.875, y: 0.68, s: 96, o: 0.9 },
-  'btn-fire-l': { x: 0.085, y: 0.40, s: 64, o: 0.8 },
-  'btn-ads':    { x: 0.73,  y: 0.80, s: 62, o: 0.85 },
-  'btn-jump':   { x: 0.945, y: 0.40, s: 62, o: 0.85 },
-  'btn-crouch': { x: 0.80,  y: 0.92, s: 58, o: 0.85 },
-  'btn-prone':  { x: 0.69,  y: 0.94, s: 50, o: 0.8 },
-  'btn-reload': { x: 0.64,  y: 0.72, s: 50, o: 0.8 },
-  'btn-heal':   { x: 0.75,  y: 0.56, s: 50, o: 0.8 },
-  'btn-cam':    { x: 0.80,  y: 0.07, s: 42, o: 0.75 },
-  'weapons':    { x: 0.5,   y: 0.92, s: 100, o: 0.95 }, // s = scale %
+  // Apex Legends Mobile-style defaults
+  'btn-fire':   { x: 0.826, y: 0.70, s: 92, o: 0.9 },
+  'btn-fire-l': { x: 0.08,  y: 0.46, s: 64, o: 0.85 },
+  'btn-ads':    { x: 0.925, y: 0.58, s: 56, o: 0.85 },
+  'btn-jump':   { x: 0.94,  y: 0.82, s: 60, o: 0.85 },
+  'btn-crouch': { x: 0.81,  y: 0.91, s: 56, o: 0.85 },
+  'btn-prone':  { x: 0.738, y: 0.93, s: 48, o: 0.8 },
+  'btn-reload': { x: 0.72,  y: 0.66, s: 48, o: 0.8 },
+  'btn-heal':   { x: 0.255, y: 0.9,  s: 46, o: 0.85 },
+  'btn-ping':   { x: 0.75,  y: 0.32, s: 48, o: 0.8 },
+  'btn-cam':    { x: 0.66,  y: 0.17, s: 40, o: 0.75 },
+  'joy-idle':   { x: 0.15,  y: 0.70, s: 130, o: 0.9 },
+  'weapons':    { x: 0.5,   y: 0.815, s: 100, o: 0.95 }, // s = scale %
 };
 
 const NAMES = {
   'btn-fire': 'Fire (right)', 'btn-fire-l': 'Fire (left)', 'btn-ads': 'Aim', 'btn-jump': 'Jump', 'btn-crouch': 'Crouch',
-  'btn-prone': 'Prone', 'btn-reload': 'Reload', 'btn-heal': 'Heal', 'btn-cam': 'Camera', 'weapons': 'Weapon bar',
+  'btn-prone': 'Prone', 'btn-reload': 'Reload', 'btn-heal': 'Heal', 'btn-cam': 'Camera', 'weapons': 'Weapon cards',
+  'btn-ping': 'Ping', 'joy-idle': 'Joystick',
 };
 
 export class Layout {
@@ -43,12 +47,12 @@ export class Layout {
 
   load() {
     let saved = {};
-    try { saved = JSON.parse(localStorage.getItem('ls-layout')) || {}; } catch {}
+    try { saved = JSON.parse(localStorage.getItem('ls-layout-v2')) || {}; } catch {}
     const d = structuredClone(DEFAULT_LAYOUT);
     for (const k in d) if (saved[k]) Object.assign(d[k], saved[k]);
     return d;
   }
-  save() { try { localStorage.setItem('ls-layout', JSON.stringify(this.data)); } catch {} }
+  save() { try { localStorage.setItem('ls-layout-v2', JSON.stringify(this.data)); } catch {} }
 
   apply() {
     const W = window.innerWidth, H = window.innerHeight;

@@ -52,7 +52,11 @@ export const CAMERA = {
 };
 
 // Picks Low / Medium / High from what the phone reports.
+export const IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
 export function detectQuality() {
+  // iPhones don't report memory; most run Medium smoothly, and the frame-rate watch lowers it if not
+  if (IS_IOS) return 'medium';
   const mem = navigator.deviceMemory || 4; // GB, Chrome only, rounded
   const cores = navigator.hardwareConcurrency || 4;
   if (mem < 2 || cores <= 2) return 'low';

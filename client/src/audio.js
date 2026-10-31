@@ -3,7 +3,7 @@ export class Audio {
   constructor() { this.ctx = null; this.volume = 0.6; }
 
   start() {
-    if (this.ctx) return;
+    if (this.ctx) { this.ctx.resume?.(); return; }
     try {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
       const len = this.ctx.sampleRate * 0.3;
@@ -13,6 +13,7 @@ export class Audio {
       this.master = this.ctx.createGain();
       this.master.gain.value = this.volume;
       this.master.connect(this.ctx.destination);
+      this.ctx.resume?.(); // iOS needs this inside the tap that started the game
     } catch { this.ctx = null; }
   }
 

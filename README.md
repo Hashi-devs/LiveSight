@@ -37,4 +37,13 @@ assets/   models (.glb), sounds, fonts (Garet)
 
 ## Status
 
-Phase 0: connection test. Open the page on two phones and tap **Ping everyone** to check they see each other.
+**Phase 1: solo prototype.** Play at https://hashi-devs.github.io/LiveSight/ (or `http://localhost:3000` when running the server).
+
+- Team Deathmatch: you + 4 bots vs 5 bots, first to 25 kills, 8-minute limit
+- Shooting Range: dummies standing, crouching and prone at different distances
+- Movement: walk, sprint, jump, crouch, slide, prone, dive roll, mantle
+- Camera: first person, third person, adaptive
+- Guns: assault rifle, SMG, pistol · HP + blue shield · med kits and shield cells
+- Graphics: Low / Medium / High picked from the phone's memory, lowered automatically if the frame rate drops
+
+The connection test from Phase 0 is at `/client/test.html`.

@@ -1,1 +1,101 @@
-<!DOCTYPE html><meta charset="utf-8"><title>LiveSight</title><p>LiveSight Phase 1 is being built. <a href="test.html">Connection test</a></p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<title>LiveSight — Squad Battle (Phase 1)</title>
+<link rel="stylesheet" href="style.css">
+<script type="importmap">{ "imports": { "three": "../vendor/three.module.js" } }</script>
+</head>
+<body>
+<div id="app">
+  <canvas id="view"></canvas>
+  <div id="touch-area"></div>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div id="scorebar">
+      <span class="team blue"><b id="score-blue">0</b></span>
+      <span id="timer">8:00</span>
+      <span class="team red"><b id="score-red">0</b></span>
+      <div id="target-line">First to 25</div>
+    </div>
+    <canvas id="minimap" width="150" height="100"></canvas>
+    <div id="killfeed"></div>
+    <div id="crosshair"><i></i><i></i><i></i><i></i></div>
+    <div id="hitmark"></div>
+    <div id="dmgdir"></div>
+    <div id="toast"></div>
+    <div id="center-msg"></div>
+    <div id="vitals">
+      <div class="bar shield"><div id="shield-fill"></div></div>
+      <div class="bar hp"><div id="hp-fill"></div></div>
+      <div id="vitals-num"><span id="hp-num">100</span> HP · <span id="sh-num">75</span> shield</div>
+    </div>
+    <div id="ammo"><b id="ammo-num">30</b><span id="ammo-mag">/30</span><div id="gun-name">Assault Rifle</div></div>
+    <div id="progress" class="hidden"><div id="progress-fill"></div><span id="progress-label">Healing</span></div>
+    <div id="fps" class="hidden"></div>
+
+    <!-- Touch buttons -->
+    <button class="btn" id="btn-gear" title="Settings">⚙</button>
+    <button class="btn" id="btn-cam" title="Camera mode">TPS</button>
+    <button class="btn big" id="btn-fire" data-look="1">FIRE</button>
+    <button class="btn" id="btn-fire-l" data-look="1">FIRE</button>
+    <button class="btn" id="btn-ads">AIM</button>
+    <button class="btn" id="btn-jump">JUMP</button>
+    <button class="btn" id="btn-crouch">CROUCH</button>
+    <button class="btn" id="btn-reload">R</button>
+    <button class="btn" id="btn-swap">SWAP</button>
+    <button class="btn" id="btn-heal">HEAL<small id="heal-count">2·2</small></button>
+    <div id="joy"><div id="joy-knob"></div></div>
+  </div>
+
+  <!-- Start screen -->
+  <div id="menu" class="screen">
+    <h1>LIVESIGHT</h1>
+    <p class="sub">Squad Battle · Phase 1 prototype</p>
+    <div class="menu-buttons">
+      <button class="menu-btn primary" data-mode="tdm">Team Deathmatch <small>You + 4 bots vs 5 bots</small></button>
+      <button class="menu-btn" data-mode="range">Shooting Range <small>Practice on dummies</small></button>
+      <button class="menu-btn ghost" id="menu-settings">Settings</button>
+    </div>
+    <p class="hint">Left side: move (push past the ring to sprint) · Right side: look · Crouch: tap = crouch, hold = prone, double-tap while moving = dive roll, while sprinting = slide · Jump into ledges to climb</p>
+    <p class="hint desktop">Keyboard: WASD, mouse, Shift sprint, Space jump, C crouch/slide, Z prone, Q roll, R reload, E swap, H heal, V camera</p>
+  </div>
+
+  <!-- Settings -->
+  <div id="settings" class="screen hidden">
+    <h2>Settings</h2>
+    <label>Look sensitivity <input type="range" id="set-sens" min="0.4" max="2.5" step="0.05"><span id="set-sens-v"></span></label>
+    <label>Camera
+      <select id="set-cam"><option value="adaptive">Adaptive (TPS, FPS when aiming/shooting)</option><option value="tps">Third person</option><option value="fps">First person</option></select>
+    </label>
+    <label>Graphics
+      <select id="set-gfx"><option value="auto">Auto</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select>
+    </label>
+    <label class="check"><input type="checkbox" id="set-autosprint"> Auto-sprint when pushing fully forward</label>
+    <label class="check"><input type="checkbox" id="set-fps"> Show frame rate</label>
+    <div class="row">
+      <button class="menu-btn primary" id="set-close">Done</button>
+      <button class="menu-btn ghost hidden" id="set-quit">Quit match</button>
+    </div>
+  </div>
+
+  <!-- End of match -->
+  <div id="end" class="screen hidden">
+    <h1 id="end-title">VICTORY</h1>
+    <p class="sub" id="end-score"></p>
+    <table id="end-table"></table>
+    <div class="row">
+      <button class="menu-btn primary" id="end-again">Play again</button>
+      <button class="menu-btn ghost" id="end-menu">Menu</button>
+    </div>
+  </div>
+
+  <div id="rotate" class="screen">Turn your phone sideways to play</div>
+  <div id="loading" class="screen">Loading…</div>
+</div>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

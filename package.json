@@ -1,0 +1,19 @@
+{
+  "name": "livesight",
+  "version": "0.0.1",
+  "description": "LiveSight: a mobile 3D hero shooter (three.js + Node.js) with WiFi hotspot multiplayer",
+  "type": "module",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "ws": "^8.18.0"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}

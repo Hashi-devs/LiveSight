@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LiveSight — Connection Test</title>
+<style>
+  /* Garet goes in assets/fonts once downloaded; system fonts until then. */
+  @font-face { font-family: 'Garet'; src: url('/assets/fonts/Garet-Heavy.woff2') format('woff2'); font-weight: 800; }
+  @font-face { font-family: 'Garet'; src: url('/assets/fonts/Garet-Book.woff2') format('woff2'); font-weight: 400; }
+  :root { --bg: #0d1117; --panel: #161c26; --ink: #e8edf5; --dim: #8a96a8; --accent: #4fc3ff; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink);
+         font-family: 'Garet', system-ui, sans-serif; padding: 24px 18px; }
+  h1 { font-weight: 800; letter-spacing: 0.08em; margin: 0 0 4px; font-size: 32px; }
+  .sub { color: var(--dim); margin: 0 0 24px; }
+  .panel { background: var(--panel); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+  .status { font-weight: 800; }
+  .ok { color: #5be38a; } .bad { color: #ff6b6b; }
+  ul { list-style: none; padding: 0; margin: 8px 0 0; }
+  li { padding: 6px 0; border-bottom: 1px solid #222b38; }
+  li.me { color: var(--accent); }
+  input, button { font: inherit; border-radius: 10px; border: 0; padding: 12px 14px; }
+  input { width: 100%; background: #0f141c; color: var(--ink); margin-bottom: 10px; }
+  button { background: var(--accent); color: #04121c; font-weight: 800; width: 100%; }
+  #log { color: var(--dim); font-size: 14px; min-height: 1.4em; }
+</style>
+</head>
+<body>
+  <h1>LIVESIGHT</h1>
+  <p class="sub">Phase 0 · connection test</p>
+
+  <div class="panel">
+    Server: <span id="status" class="status">connecting…</span>
+  </div>
+
+  <div class="panel">
+    <input id="name" maxlength="16" placeholder="Your name">
+    <button id="ping">Ping everyone</button>
+    <p id="log"></p>
+  </div>
+
+  <div class="panel">
+    Players online: <span id="count">0</span>
+    <ul id="players"></ul>
+  </div>
+
+<script>
+  const statusEl = document.getElementById('status');
+  const listEl = document.getElementById('players');
+  const countEl = document.getElementById('count');
+  const logEl = document.getElementById('log');
+  let myId = null, ws;
+
+  function connect() {
+    ws = new WebSocket(`ws://${location.host}`);
+    ws.onopen = () => {
+      statusEl.textContent = 'connected'; statusEl.className = 'status ok';
+      const saved = localStorage.getItem('ls-name');
+      if (saved) { document.getElementById('name').value = saved; send({ type: 'name', name: saved }); }
+    };
+    ws.onclose = () => {
+      statusEl.textContent = 'disconnected, retrying…'; statusEl.className = 'status bad';
+      setTimeout(connect, 1500);
+    };
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'welcome') myId = msg.id;
+      if (msg.type === 'roster') {
+        countEl.textContent = msg.players.length;
+        listEl.innerHTML = '';
+        for (const p of msg.players) {
+          const li = document.createElement('li');
+          li.textContent = p.name + (p.id === myId ? ' (you)' : '');
+          if (p.id === myId) li.className = 'me';
+          listEl.appendChild(li);
+        }
+      }
+      if (msg.type === 'pinged') {
+        logEl.textContent = `${msg.from} pinged everyone`;
+        if (navigator.vibrate) navigator.vibrate(80);
+      }
+    };
+  }
+  function send(m) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(m)); }
+
+  document.getElementById('name').addEventListener('change', (e) => {
+    const name = e.target.value.trim();
+    try { localStorage.setItem('ls-name', name); } catch {}
+    send({ type: 'name', name });
+  });
+  document.getElementById('ping').addEventListener('click', () => send({ type: 'ping' }));
+  connect();
+</script>
+</body>
+</html>

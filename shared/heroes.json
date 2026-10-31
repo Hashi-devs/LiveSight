@@ -1,0 +1,41 @@
+{
+  "_note": "Starting values from the build plan. Durations and cooldowns in seconds, distances in metres.",
+  "base": { "hp": 100, "shieldMax": 100 },
+  "heroes": [
+    {
+      "id": "xavier", "name": "Xavier", "gender": "M", "role": "Tank / support",
+      "main": { "id": "movable_shield", "name": "Movable shield", "shieldHp": 600, "duration": 20, "cooldown": 30 },
+      "sub":  { "id": "heal", "name": "Heal", "amount": 50, "overTime": 3, "cooldown": 15 }
+    },
+    {
+      "id": "phantom", "name": "Phantom", "gender": "F", "role": "Skirmisher",
+      "main": { "id": "intangible", "name": "Intangible", "duration": 3, "bulletPassChance": 0.7, "throughWalls": true, "canShoot": true, "cooldown": 30 },
+      "sub":  { "id": "flash_step", "name": "Flash step", "distance": 6, "charges": 2, "rechargeEach": 8 }
+    },
+    {
+      "id": "kentaro", "name": "Kentaro", "gender": "M", "role": "Flanker",
+      "main": { "id": "teleport", "name": "Teleport", "range": 25, "cooldown": 35 },
+      "sub":  { "id": "electric_melee", "name": "Electric melee", "damage": 40, "slow": 1.5, "cooldown": 10 }
+    },
+    {
+      "id": "franklin", "name": "Franklin", "gender": "M", "role": "Controller",
+      "main": { "id": "poison_gas", "name": "Poison gas", "radius": 6, "duration": 8, "dps": 6, "ignoresShield": true, "cooldown": 40 },
+      "sub":  { "id": "blind_domain", "name": "Blind domain", "radius": 5, "duration": 6, "cooldown": 20 }
+    },
+    {
+      "id": "surprise", "name": "Surprise", "gender": "Robot", "role": "Infiltrator",
+      "main": { "id": "invisibility", "name": "Invisibility", "duration": 6, "breaksOnFire": true, "breaksOnDamage": true, "cooldown": 40 },
+      "sub":  { "id": "disguise", "name": "Disguise", "duration": 10, "breaksOnFire": true, "hasTell": true, "hiddenOnEnemyMinimap": true, "cooldown": 25 }
+    },
+    {
+      "id": "esu", "name": "Esú", "gender": "F", "role": "Trickster",
+      "main": { "id": "clone", "name": "Clone", "duration": 10, "cooldown": 25 },
+      "sub":  { "id": "conceal_area", "name": "Conceal area", "radius": 6, "duration": 8, "cooldown": 20 }
+    },
+    {
+      "id": "hector", "name": "Hector", "gender": "M", "role": "Artillery",
+      "main": { "id": "airdrop_bombs", "name": "Airdrop bombs", "bombs": 5, "over": 3, "damageEach": 30, "cooldown": 60 },
+      "sub":  { "id": "flight", "name": "Flight", "fuel": 4, "rechargeWhenGrounded": true, "canShootAirborne": false }
+    }
+  ]
+}

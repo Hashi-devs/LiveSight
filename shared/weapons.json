@@ -1,0 +1,31 @@
+{
+  "_note": "15 guns across 7 categories. Names are placeholders. Stats get filled in Phase 1 and tuned in playtests. inV1 = part of the Nov 18 build.",
+  "headshotMultiplier": 1.75,
+  "sniperHeadshotMultiplier": 2.0,
+  "categories": [
+    { "id": "ar",       "name": "Assault rifle",  "range": "mid" },
+    { "id": "smg",      "name": "SMG",            "range": "close" },
+    { "id": "shotgun",  "name": "Shotgun",        "range": "very close" },
+    { "id": "sniper",   "name": "Sniper rifle",   "range": "long", "projectile": true },
+    { "id": "marksman", "name": "Marksman rifle", "range": "mid-long" },
+    { "id": "lmg",      "name": "LMG",            "range": "mid" },
+    { "id": "pistol",   "name": "Pistol",         "range": "close-mid" }
+  ],
+  "weapons": [
+    { "id": "ar_auto",        "category": "ar",       "style": "Full-auto all-rounder", "inV1": true },
+    { "id": "ar_burst",       "category": "ar",       "style": "Burst rifle",           "inV1": false },
+    { "id": "ar_heavy",       "category": "ar",       "style": "Heavy hard-hitter",     "inV1": false },
+    { "id": "smg_fast",       "category": "smg",      "style": "Fast-firing",           "inV1": true },
+    { "id": "smg_mag",        "category": "smg",      "style": "High-capacity",         "inV1": false },
+    { "id": "sg_pump",        "category": "shotgun",  "style": "Pump, one big hit",     "inV1": true },
+    { "id": "sg_auto",        "category": "shotgun",  "style": "Auto, rapid close range", "inV1": false },
+    { "id": "sn_bolt",        "category": "sniper",   "style": "Bolt-action",           "inV1": true },
+    { "id": "sn_semi",        "category": "sniper",   "style": "Semi-auto",             "inV1": false },
+    { "id": "mk_semi",        "category": "marksman", "style": "Semi-auto precision",   "inV1": true },
+    { "id": "mk_lever",       "category": "marksman", "style": "Lever-action",          "inV1": false },
+    { "id": "lmg_mag",        "category": "lmg",      "style": "Big magazine",          "inV1": false },
+    { "id": "lmg_spin",       "category": "lmg",      "style": "Spin-up heavy",         "inV1": false },
+    { "id": "pistol_fast",    "category": "pistol",   "style": "Fast sidearm",          "inV1": true },
+    { "id": "pistol_cannon",  "category": "pistol",   "style": "Hand cannon",           "inV1": false }
+  ]
+}

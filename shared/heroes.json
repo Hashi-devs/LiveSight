@@ -55,7 +55,14 @@
         "distance": 6,
         "charges": 2,
         "rechargeEach": 8,
-        "desc": "Instant short-range dash."
+        "passesThrough": [
+          "walls",
+          "bullets",
+          "effects",
+          "enemies"
+        ],
+        "badLandingDamage": 25,
+        "desc": "Instant short dash that passes through walls, bullets, effects and enemies in its path. Ending up inside any of them hurts her, and she is pushed to the nearest open spot."
       },
       "color": "#8a5cd6"
     },
@@ -65,11 +72,14 @@
       "gender": "M",
       "role": "Flanker",
       "main": {
-        "id": "teleport",
-        "name": "Teleport",
-        "range": 25,
+        "id": "limbo_teleport",
+        "name": "Limbo",
+        "range": 40,
+        "doors": 6,
+        "maxStay": 30,
         "cooldown": 35,
-        "desc": "Jump to any point you can see within range."
+        "safeInLimbo": true,
+        "desc": "Opens a portal into Limbo, a small liminal living room. Each door leads to a different spot within range; he picks one and steps out there. Stay longer than 30 s and he is stuck until the skill resets, when a door appears again."
       },
       "sub": {
         "id": "electric_melee",
@@ -142,7 +152,15 @@
         "name": "Clone",
         "duration": 10,
         "cooldown": 25,
-        "desc": "Send out a decoy that runs ahead and fires harmless shots."
+        "moveStyles": [
+          "run",
+          "crouch_walk",
+          "dive_roll",
+          "sprint_slide",
+          "strafe"
+        ],
+        "styleOrder": "changes each use",
+        "desc": "Sends out a decoy that fires harmless shots. Its movement changes with each use (running, crouch-walking, dive-rolling and more) so it's harder to read."
       },
       "sub": {
         "id": "conceal_area",

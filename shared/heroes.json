@@ -78,9 +78,16 @@
         "maxStay": 30,
         "cooldown": 35,
         "safeInLimbo": true,
-        "desc": "Opens a portal into Limbo, a small liminal living room with a single door. He walks through it and picks where to come out on the map, within range. Stay longer than 30 s and he is stuck until the skill resets, when the door appears again.",
+        "desc": "Opens a portal into Limbo, a small liminal living room with a single door. The portal closes behind him so no one can follow. He walks through the door and picks where to come out on the map, within range. Stay longer than 30 s and he is stuck until the skill resets. An enemy Kentaro can see a faint tear where the portal was, and with his own Limbo active he can slip into it and see where his rival is heading.",
         "doors": 1,
-        "pickOnMap": true
+        "pickOnMap": true,
+        "portalClosesBehind": true,
+        "othersCanEnter": false,
+        "tear": {
+          "visibleTo": "enemy Kentaro only",
+          "enemyKentaroCanEnter": "while his own Limbo is active",
+          "reveals": "the other Kentaro's chosen exit path"
+        }
       },
       "sub": {
         "id": "electric_melee",

@@ -8,7 +8,7 @@ import { makeGun } from './guns.js';
 const TEAM_COLOR = { blue: 0x3d7bd9, red: 0xd2483c };
 
 export class Character {
-  constructor({ name, team, isPlayer = false }) {
+  constructor({ name, team, isPlayer = false, color = null }) {
     this.name = name;
     this.team = team;
     this.isPlayer = isPlayer;
@@ -34,7 +34,7 @@ export class Character {
     this.markedT = 0;      // hit marker above this character (seen by the player)
     this.lastFiredT = 99;  // seconds since last shot (minimap blips)
     this.walkPhase = 0;
-    this.model = buildSoldier(TEAM_COLOR[team]);
+    this.model = buildSoldier(color ?? TEAM_COLOR[team]);
     this.setGun('ar_auto');
   }
 

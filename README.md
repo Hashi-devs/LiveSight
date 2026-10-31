@@ -37,7 +37,7 @@ assets/   models (.glb), sounds, fonts (Garet)
 
 ## Status
 
-**Phase 1: solo prototype.** Play at https://hashi-devs.github.io/LiveSight/ (or `http://localhost:3000` when running the server).
+**Phase 1: solo prototype + lobby structure.** Play at https://hashi-devs.github.io/LiveSight/ (or `http://localhost:3000` when running the server).
 
 - Team Deathmatch: you + 4 bots vs 5 bots, first to 25 kills, 8-minute limit
 - Shooting Range: dummies standing, crouching and prone at different distances

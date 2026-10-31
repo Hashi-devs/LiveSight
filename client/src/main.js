@@ -12,6 +12,7 @@ import { lineOfSight } from './physics.js';
 import { Audio } from './audio.js';
 import { Layout } from './layout.js';
 import { SIGHTS } from './guns.js';
+import { UI } from './ui.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -157,7 +158,10 @@ function startMatch(mode) {
   input.reset();
   input.enabled = true;
   game.running = true; game.paused = false;
-  $('menu').classList.add('hidden'); $('end').classList.add('hidden'); $('settings').classList.add('hidden');
+  ui.show('none'); $('end').classList.add('hidden'); $('settings').classList.add('hidden');
+  if (showcase) showcase.model.root.visible = false;
+  player.model.root.visible = true;
+  const hero = ui.hero; if (hero) document.querySelector('#portrait b').textContent = hero.name[0];
   $('hud').classList.remove('hidden');
   $('rotate').classList.add('active');
   hud.toast(mode === 'range' ? 'Shooting Range: dummies respawn, nothing shoots back' : 'Team Deathmatch: first to ' + MATCH.killTarget, 3);
@@ -174,6 +178,10 @@ function endMatch() {
   const mvp = rows[0];
   $('end-table').innerHTML = '<tr><th>Player</th><th>Kills</th><th>Deaths</th><th>Damage</th></tr>' +
     rows.map((c) => `<tr class="${c.team} ${c.isPlayer ? 'me' : ''}"><td>${c.name}${c === mvp ? ' ★ MVP' : ''}</td><td>${c.kills}</td><td>${c.deaths}</td><td>${Math.round(c.damage)}</td></tr>`).join('');
+  if (game.mode === 'tdm') {
+    const r = ui.recordMatch({ kills: player.kills, deaths: player.deaths, damage: player.damage, won });
+    $('end-xp').textContent = `+${r.xp} XP${r.levelUp ? ' · LEVEL UP! LEVEL ' + ui.level : ''}`;
+  } else $('end-xp').textContent = '';
   $('hud').classList.add('hidden');
   $('end').classList.remove('hidden');
 }
@@ -455,10 +463,15 @@ function frame(now) {
     hud.updateNumbers(dt, camera);
     hud.update(dt);
   } else {
-    // Slow orbit behind the menus
-    const t = now / 1000;
-    camera.position.set(Math.sin(t * 0.05) * 40, 22, Math.cos(t * 0.05) * 40);
-    camera.lookAt(0, 2, 0);
+    // Behind the menus: the selected hero, or a slow orbit of the map
+    if (!updateShowcase(dt, now)) {
+      rig.viewmodel.visible = false;
+      if (camera.fov !== 75) { camera.fov = 75; camera.updateProjectionMatrix(); }
+      const t = now / 1000;
+      camera.position.set(Math.sin(t * 0.05) * 40, 22, Math.cos(t * 0.05) * 40);
+      camera.lookAt(0, 2, 0);
+    }
+    if (snowUpdate) snowUpdate(dt);
   }
 
   renderer.render(scene, camera);
@@ -491,11 +504,54 @@ async function goFullscreen() {
   try { await screen.orientation?.lock?.('landscape'); } catch {}
 }
 
-document.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => {
-  audio.start();
-  if (matchMedia('(pointer: coarse)').matches && !IS_IOS) goFullscreen();
-  startMatch(b.dataset.mode);
-}));
+// ---------- Lobby ----------
+const ui = new UI({
+  onPlay: (mode) => {
+    audio.start();
+    if (matchMedia('(pointer: coarse)').matches && !IS_IOS) goFullscreen();
+    startMatch(mode);
+  },
+  onSettings: () => openSettings(false),
+});
+ui.toast = (msg) => {
+  const t = $('ui-toast'); t.textContent = msg; t.style.opacity = '1';
+  clearTimeout(ui._tt); ui._tt = setTimeout(() => (t.style.opacity = '0'), 1800);
+};
+$('tap-start').addEventListener('click', () => { audio.start(); if (matchMedia('(pointer: coarse)').matches && !IS_IOS) goFullscreen(); });
+
+function toLobby() {
+  game.running = false;
+  clearBots();
+  player.model.root.visible = false;
+  ui.show('lobby');
+}
+
+// The selected hero stands in the plaza behind the menus
+let showcase = null, showcaseId = null;
+const SHOW_AT = new THREE.Vector3(0, 0, -2);
+function updateShowcase(dt, now) {
+  const id = ui.showcase;
+  if (!id) { if (showcase) showcase.model.root.visible = false; return false; }
+  const h = ui.heroes.find((x) => x.id === id);
+  if (!h) return false;
+  if (showcaseId !== id) {
+    if (showcase) scene.remove(showcase.model.root);
+    showcase = new Character({ name: h.name, team: 'blue', color: parseInt(h.color.slice(1), 16) });
+    scene.add(showcase.model.root);
+    showcase.pos.copy(SHOW_AT);
+    showcaseId = id;
+  }
+  showcase.model.root.visible = true;
+  showcase.yaw = Math.PI + Math.sin(now * 0.0006) * 0.35; // slow turn to show the model
+  showcase.pitch = Math.sin(now * 0.0013) * 0.05;
+  showcase.syncModel(dt, false);
+  rig.viewmodel.visible = false; // no first-person gun in the menus
+  const shift = ui.showcaseShift;
+  camera.position.set(SHOW_AT.x + shift * 0.5, 1.35, SHOW_AT.z + 2.9);
+  camera.lookAt(SHOW_AT.x - shift * 0.8, 1.0, SHOW_AT.z);
+  if (camera.fov !== 55) { camera.fov = 55; camera.updateProjectionMatrix(); }
+  return true;
+}
 
 function openSettings(inMatch) {
   game.paused = inMatch;
@@ -510,7 +566,6 @@ function openSettings(inMatch) {
   $('settings').classList.remove('hidden');
   input.reset();
 }
-$('menu-settings').addEventListener('click', () => openSettings(false));
 $('btn-gear').addEventListener('click', () => openSettings(true));
 $('btn-gear').addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); openSettings(true); }, { passive: false });
 $('set-sens').addEventListener('input', (e) => { settings.sensitivity = +e.target.value; $('set-sens-v').textContent = settings.sensitivity.toFixed(2) + '×'; });
@@ -526,16 +581,16 @@ $('set-holdprone').addEventListener('change', (e) => (settings.holdProne = e.tar
 $('set-layout').addEventListener('click', () => {
   save();
   $('settings').classList.add('hidden');
-  if (!game.running) { $('hud').classList.remove('hidden'); $('menu').classList.add('hidden'); }
+  if (!game.running) { $('hud').classList.remove('hidden'); ui.show('none'); }
   layout.open();
 });
 $('set-close').addEventListener('click', () => {
   save(); $('settings').classList.add('hidden'); game.paused = false; last = performance.now();
-  if (!game.running) { $('hud').classList.add('hidden'); $('menu').classList.remove('hidden'); }
+  if (!game.running) { $('hud').classList.add('hidden'); if (ui.screen === 'none') toLobby(); }
 });
 $('set-quit').addEventListener('click', () => { save(); $('settings').classList.add('hidden'); endMatch(); });
 $('end-again').addEventListener('click', () => startMatch(game.mode));
-$('end-menu').addEventListener('click', () => { $('end').classList.add('hidden'); $('menu').classList.remove('hidden'); });
+$('end-menu').addEventListener('click', () => { $('end').classList.add('hidden'); toLobby(); });
 
 // ---------- Phone setup (Android + iOS) ----------
 // Block pinch-zoom / double-tap zoom on iOS Safari, which ignores user-scalable=no
@@ -551,5 +606,6 @@ $('loading').classList.add('hidden');
 requestAnimationFrame(frame);
 
 // Exposed for automated tests
-window.__ls = { game, player, playerLo, rig, input, startMatch, settings, layout, hud };
+window.__ls = { game, player, playerLo, rig, input, startMatch, settings, layout, hud, ui };
+player.model.root.visible = false;
 equip();

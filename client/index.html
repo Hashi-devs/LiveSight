@@ -108,19 +108,7 @@
     <span class="ed-hint">Drag any control to move it</span>
   </div>
 
-  <!-- Start screen -->
-  <div id="menu" class="screen">
-    <h1>LIVESIGHT</h1>
-    <p class="sub">SQUAD BATTLE · PROTOTYPE 1.2</p>
-    <div class="menu-buttons">
-      <button class="menu-btn primary" data-mode="tdm">TEAM DEATHMATCH <small>You + 4 bots vs 5 bots</small></button>
-      <button class="menu-btn" data-mode="range">SHOOTING RANGE <small>Practice on dummies</small></button>
-      <button class="menu-btn ghost" id="menu-settings">SETTINGS</button>
-    </div>
-    <p class="hint">Left side: move (push past the ring to sprint) · Right side: look · Drag on Fire to aim · Crouch: tap = crouch, double-tap while moving = dive roll, tap while sprinting = slide · Prone has its own button · Jump into ledges to climb · Diamond = ping a nearby enemy</p>
-    <p class="hint desktop">Keyboard: WASD, mouse, Shift sprint, Space jump, C crouch/slide, Z prone, Q roll, R reload, E swap, H heal, F ping, V camera</p>
-    <p class="hint ios hidden">iPhone: tap Share → Add to Home Screen, then open LiveSight from there to play full screen.</p>
-  </div>
+  <div id="ui-toast"></div>
 
   <!-- Settings -->
   <div id="settings" class="screen hidden">
@@ -146,10 +134,11 @@
   <div id="end" class="screen hidden">
     <h1 id="end-title">VICTORY</h1>
     <p class="sub" id="end-score"></p>
+    <p class="sub" id="end-xp"></p>
     <table id="end-table"></table>
     <div class="row">
       <button class="menu-btn primary" id="end-again">PLAY AGAIN</button>
-      <button class="menu-btn ghost" id="end-menu">MENU</button>
+      <button class="menu-btn ghost" id="end-menu">LOBBY</button>
     </div>
   </div>
 

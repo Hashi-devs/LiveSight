@@ -29,6 +29,9 @@ jobs:
           cp -r assets _site/assets
           cp node_modules/three/build/three.module.js _site/vendor/
           cp node_modules/three/build/three.core.js _site/vendor/ 2>/dev/null || true
+          mkdir -p _site/vendor/fonts
+          cp node_modules/@fontsource/barlow-semi-condensed/files/barlow-semi-condensed-latin-*-normal.woff2 _site/vendor/fonts/
+          ls _site/vendor/fonts
           cp index.html _site/index.html
           touch _site/.nojekyll
 

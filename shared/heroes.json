@@ -75,11 +75,12 @@
         "id": "limbo_teleport",
         "name": "Limbo",
         "range": 40,
-        "doors": 6,
         "maxStay": 30,
         "cooldown": 35,
         "safeInLimbo": true,
-        "desc": "Opens a portal into Limbo, a small liminal living room. Each door leads to a different spot within range; he picks one and steps out there. Stay longer than 30 s and he is stuck until the skill resets, when a door appears again."
+        "desc": "Opens a portal into Limbo, a small liminal living room with a single door. He walks through it and picks where to come out on the map, within range. Stay longer than 30 s and he is stuck until the skill resets, when the door appears again.",
+        "doors": 1,
+        "pickOnMap": true
       },
       "sub": {
         "id": "electric_melee",

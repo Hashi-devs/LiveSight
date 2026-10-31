@@ -15,6 +15,8 @@ const app = express();
 app.use(express.static(path.join(root, 'client')));
 app.use('/shared', express.static(path.join(root, 'shared')));
 app.use('/assets', express.static(path.join(root, 'assets')));
+// three.js comes from npm, so the game also works offline on the hotspot.
+app.use('/vendor', express.static(path.join(root, 'node_modules', 'three', 'build')));
 
 const server = createServer(app);
 const wss = new WebSocketServer({ server });

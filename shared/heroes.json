@@ -11,12 +11,18 @@
       "gender": "M",
       "role": "Tank / support",
       "main": {
-        "id": "movable_shield",
-        "name": "Movable shield",
+        "id": "rotating_shield",
+        "name": "Rotating shield",
+        "radius": 2.4,
+        "spinSpeed": 720,
+        "followsCaster": true,
+        "blockPct": 99.9,
         "shieldHp": 600,
-        "duration": 20,
+        "contactDamage": 8,
+        "contactTick": 0.5,
+        "duration": 12,
         "cooldown": 30,
-        "desc": "Carry a barrier that blocks bullets from the front."
+        "desc": "A shield ring spins fast around Xavier, wide enough to cover two teammates. It stops 99.9% of enemy bullets and lightly damages enemies who pass through it."
       },
       "sub": {
         "id": "heal",

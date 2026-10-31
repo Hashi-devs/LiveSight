@@ -236,9 +236,14 @@ export class Character {
   // Pose the jointed model from the movement state.
   syncModel(dt, firstPerson) {
     const m = this.model;
-    m.root.visible = !firstPerson;
+    // Death: topple over (0.35 s), lie still, then sink out of sight before respawning
+    if (this.alive) { this.deathT = 0; this.fallSide = 0; }
+    else { this.deathT = (this.deathT || 0) + dt; if (!this.fallSide) this.fallSide = Math.random() < 0.5 ? -1 : 1; }
+    const gone = !this.alive && this.deathT > DEATH.hide;
+    m.root.visible = !firstPerson && !gone;
     if (firstPerson) return;
     m.root.position.copy(this.pos);
+    if (!this.alive && this.deathT > DEATH.sink) m.root.position.y -= (this.deathT - DEATH.sink) * 1.4;
     m.root.rotation.y = this.yaw;
     m.marker.visible = this.markedT > 0 && this.alive;
     m.marker.rotation.y += dt * 3;
@@ -250,7 +255,9 @@ export class Character {
     const ph = this.walkPhase;
 
     if (!this.alive) {
-      Object.assign(P, { bodyX: Math.PI / 2, bodyY: 0.2, bodyZ: 0.1, aim: 0.6 });
+      const f = Math.min(1, this.deathT / DEATH.fall), e = f * f; // accelerate like a real fall
+      // topple sideways: reads clearly from any angle, unlike falling straight back
+      Object.assign(P, { bodyX: 0.3 * e, rollZ: this.fallSide * Math.PI / 2 * e, bodyY: 0.15 * e, aim: 0.6 * e, thL: 0.5 * e, shL: -0.6 * e });
     } else if (this.mode === 'roll') {
       Object.assign(P, { hipY: 0.55, thL: 1.5, thR: 1.5, shL: -2.2, shR: -2.2, lean: 0.9, aim: -0.4 });
       P.spin = -Math.PI * 2 * (1 - this.modeT / MOVE.rollTime);
@@ -285,6 +292,7 @@ export class Character {
     if (P.spin) { m.spin.position.y = 0.6; m.body.position.set(0, -0.6, 0); }
     else { m.spin.position.y = 0; m.body.position.set(0, P.bodyY, P.bodyZ); }
     m.body.rotation.x = P.bodyX;
+    m.body.rotation.z = P.rollZ || 0;
     m.hips.position.y = P.hipY;
     m.thighL.rotation.x = P.thL; m.thighR.rotation.x = P.thR;
     m.shinL.rotation.x = P.shL; m.shinR.rotation.x = P.shR;
@@ -293,6 +301,9 @@ export class Character {
     m.head.rotation.x = Math.max(-0.5, Math.min(0.5, this.pitch * 0.5)) + P.lean * 0.6 + (P.headUp || 0);
   }
 }
+
+// Timings (seconds) for the death animation
+const DEATH = { fall: 0.35, sink: 1.8, hide: 2.5 };
 
 const _f = new THREE.Vector3(), _r = new THREE.Vector3(), _d = new THREE.Vector3();
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);

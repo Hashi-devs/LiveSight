@@ -282,15 +282,15 @@ body.editing [data-layout].selected { outline: 2px solid var(--gold); }
 .lob-hero b { font-family: var(--f-head); font-weight: 800; font-size: 26px; letter-spacing: 0.14em; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8); }
 .lob-hero span { font-size: 11px; font-weight: 700; letter-spacing: 0.16em; color: var(--dim); }
 .mini { margin-top: 6px; background: var(--glass-2); border: 1px solid var(--edge); color: var(--ink); font: 700 10px var(--f-body); letter-spacing: 0.14em; padding: 5px 12px; }
-.play { position: absolute; left: calc(12px + var(--sl)); bottom: 12px; width: 200px; height: 66px; border: 0; color: #fff; display: grid;
+.play { position: absolute; right: calc(12px + var(--sr)); bottom: 12px; width: 200px; height: 66px; border: 0; color: #fff; display: grid;
   grid-template-columns: auto 1fr; grid-template-rows: 1fr auto; align-items: center; column-gap: 10px; padding: 8px 18px; text-align: left;
-  background: linear-gradient(180deg, #ee9a52, #c0642c); clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+  background: linear-gradient(180deg, #ee9a52, #c0642c); clip-path: polygon(14px 0, 100% 0, 100% 100%, 0 100%, 0 14px);
   box-shadow: 0 0 24px rgba(238, 154, 82, 0.35); }
 .play svg { grid-row: span 2; width: 26px; height: 26px; }
 .play b { font-family: var(--f-head); font-weight: 800; font-size: 26px; letter-spacing: 0.14em; line-height: 1; }
 .play small { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: #ffe6d2; }
 .play:active { filter: brightness(1.15); }
-.lob-bar { position: absolute; right: calc(12px + var(--sr)); bottom: 12px; display: flex; gap: 4px; }
+.lob-bar { position: absolute; left: calc(12px + var(--sl)); bottom: 12px; display: flex; gap: 4px; }
 .lob-bar button { width: 128px; height: 52px; background: var(--glass-2); border: 1px solid rgba(255, 255, 255, 0.14); border-bottom: 2px solid var(--edge); color: var(--ink);
   display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 0 12px; }
 .lob-bar b { font: 700 13px var(--f-body); letter-spacing: 0.14em; } .lob-bar small { font-size: 10px; color: var(--dim); }

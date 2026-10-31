@@ -214,7 +214,7 @@ const ordinal = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? 'TH' : ['TH', 'ST',
 
 function onKill(killer, victim, head) {
   killer.kills++; victim.deaths++;
-  victim.respawnT = game.mode === 'range' ? 1.5 : MATCH.respawn;
+  victim.respawnT = game.mode === 'range' ? 3 : MATCH.respawn;
   const ended = victim.streak || 0;
   killer.streak = (killer.streak || 0) + 1;
   victim.streak = 0;

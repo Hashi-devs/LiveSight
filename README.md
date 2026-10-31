@@ -56,7 +56,7 @@ The connection test from Phase 0 is at `/client/test.html`.
 | Numbers | Danson | Free version is personal use only; buy a licence before selling | Put `Danson` (.otf, .ttf or .woff2) in `assets/fonts/` |
 | Body | Barlow Semi Condensed | SIL OFL, free for commercial use | Installed automatically from npm |
 
-Until the Garet and Danson files are added, the game falls back to Barlow Semi Condensed.
+Garet is included under the Spacetype free-font EULA (`assets/fonts/licenses/`), which allows embedding it in websites and games but not handing out the font files on their own. Font by [Spacetype](https://spacetype.co). Danson is not in the repo: the free version is personal use only, so numbers use Barlow Semi Condensed until a Danson licence is bought.
 
 ## Phones
 

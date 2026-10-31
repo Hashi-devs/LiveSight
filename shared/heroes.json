@@ -1,0 +1,210 @@
+{
+  "_note": "Starting values from the build plan. Durations and cooldowns in seconds, distances in metres. color = placeholder accent until the colour scheme is chosen.",
+  "base": {
+    "hp": 100,
+    "shieldMax": 100
+  },
+  "heroes": [
+    {
+      "id": "xavier",
+      "name": "Xavier",
+      "gender": "M",
+      "role": "Tank / support",
+      "main": {
+        "id": "rotating_shield",
+        "name": "Rotating shield",
+        "radius": 2.4,
+        "spinSpeed": 720,
+        "followsCaster": true,
+        "blockPct": 99.9,
+        "shieldHp": 600,
+        "contactDamage": 8,
+        "contactTick": 0.5,
+        "duration": 12,
+        "cooldown": 30,
+        "desc": "A shield ring spins fast around Xavier, wide enough to cover two teammates. It stops 99.9% of enemy bullets and lightly damages enemies who pass through it."
+      },
+      "sub": {
+        "id": "heal",
+        "name": "Heal",
+        "amount": 50,
+        "overTime": 3,
+        "cooldown": 15,
+        "desc": "Restore health to yourself or a nearby ally."
+      },
+      "color": "#4a78b8"
+    },
+    {
+      "id": "phantom",
+      "name": "Phantom",
+      "gender": "F",
+      "role": "Skirmisher",
+      "main": {
+        "id": "intangible",
+        "name": "Intangible",
+        "duration": 3,
+        "bulletPassChance": 0.7,
+        "throughWalls": true,
+        "canShoot": true,
+        "cooldown": 30,
+        "desc": "Phase out: walk through walls while most bullets pass through you. You can still shoot."
+      },
+      "sub": {
+        "id": "flash_step",
+        "name": "Flash step",
+        "distance": 6,
+        "charges": 2,
+        "rechargeEach": 8,
+        "passesThrough": [
+          "walls",
+          "bullets",
+          "effects",
+          "enemies"
+        ],
+        "badLandingDamage": 25,
+        "desc": "Instant short dash that passes through walls, bullets, effects and enemies in its path. Ending up inside any of them hurts her, and she is pushed to the nearest open spot."
+      },
+      "color": "#8a5cd6"
+    },
+    {
+      "id": "kentaro",
+      "name": "Kentaro",
+      "gender": "M",
+      "role": "Flanker",
+      "main": {
+        "id": "limbo_teleport",
+        "name": "Limbo",
+        "range": 40,
+        "maxStay": 30,
+        "cooldown": 35,
+        "safeInLimbo": true,
+        "desc": "Opens a portal into Limbo, a small liminal living room with a single door. The portal closes behind him so no one can follow. He walks through the door and picks where to come out on the map, within range. Stay longer than 30 s and he is stuck until the skill resets. An enemy Kentaro can see a faint tear where the portal was, and with his own Limbo active he can slip into it, see where his rival is heading and take the same exit to ambush him.",
+        "doors": 1,
+        "pickOnMap": true,
+        "portalClosesBehind": true,
+        "othersCanEnter": false,
+        "tear": {
+          "visibleTo": "enemy Kentaro only",
+          "enemyKentaroCanEnter": "while his own Limbo is active",
+          "reveals": "the other Kentaro's chosen exit path",
+          "canFollowExit": true,
+          "exitsAtSameSpot": "ambush: both Kentaros come out at the rival's chosen spot"
+        }
+      },
+      "sub": {
+        "id": "electric_melee",
+        "name": "Electric melee",
+        "damage": 40,
+        "slow": 1.5,
+        "cooldown": 10,
+        "desc": "A shocking strike that damages and slows."
+      },
+      "color": "#2bb3c0"
+    },
+    {
+      "id": "franklin",
+      "name": "Franklin",
+      "gender": "M",
+      "role": "Controller",
+      "main": {
+        "id": "poison_gas",
+        "name": "Poison gas",
+        "radius": 6,
+        "duration": 8,
+        "dps": 6,
+        "ignoresShield": true,
+        "cooldown": 40,
+        "desc": "Throw a canister that releases a cloud of poison. Ignores shields."
+      },
+      "sub": {
+        "id": "blind_domain",
+        "name": "Blind domain",
+        "radius": 5,
+        "duration": 6,
+        "cooldown": 20,
+        "desc": "Create a dome that darkens the view of enemies inside."
+      },
+      "color": "#6aa84f"
+    },
+    {
+      "id": "surprise",
+      "name": "Surprise",
+      "gender": "Robot",
+      "role": "Infiltrator",
+      "main": {
+        "id": "invisibility",
+        "name": "Invisibility",
+        "duration": 6,
+        "breaksOnFire": true,
+        "breaksOnDamage": true,
+        "cooldown": 40,
+        "desc": "Turn invisible. Firing or taking damage reveals you."
+      },
+      "sub": {
+        "id": "disguise",
+        "name": "Disguise",
+        "duration": 10,
+        "breaksOnFire": true,
+        "hasTell": true,
+        "hiddenOnEnemyMinimap": true,
+        "cooldown": 25,
+        "desc": "Enemies see you as one of their teammates, with a small tell."
+      },
+      "color": "#d08a2e"
+    },
+    {
+      "id": "esu",
+      "name": "Esú",
+      "gender": "F",
+      "role": "Trickster",
+      "main": {
+        "id": "clone",
+        "name": "Clone",
+        "duration": 10,
+        "cooldown": 25,
+        "moveStyles": [
+          "run",
+          "crouch_walk",
+          "dive_roll",
+          "sprint_slide",
+          "strafe"
+        ],
+        "styleOrder": "changes each use",
+        "desc": "Sends out a decoy that fires harmless shots. Its movement changes with each use (running, crouch-walking, dive-rolling and more) so it's harder to read."
+      },
+      "sub": {
+        "id": "conceal_area",
+        "name": "Conceal area",
+        "radius": 6,
+        "duration": 8,
+        "cooldown": 20,
+        "desc": "Hide everyone inside a zone from outside view."
+      },
+      "color": "#c0394b"
+    },
+    {
+      "id": "hector",
+      "name": "Hector",
+      "gender": "M",
+      "role": "Artillery",
+      "main": {
+        "id": "airdrop_bombs",
+        "name": "Airdrop bombs",
+        "bombs": 5,
+        "over": 3,
+        "damageEach": 30,
+        "cooldown": 60,
+        "desc": "Mark an area for a bombing run."
+      },
+      "sub": {
+        "id": "flight",
+        "name": "Flight",
+        "fuel": 4,
+        "rechargeWhenGrounded": true,
+        "canShootAirborne": false,
+        "desc": "Hover and fly for a few seconds."
+      },
+      "color": "#d4a12a"
+    }
+  ]
+}
